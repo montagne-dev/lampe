@@ -73,6 +73,58 @@ class GitHubProvider(Provider):
         except Exception as e:
             raise ValueError(f"Failed to authenticate with GitHub token: {e}")
 
+    def healthcheck(self) -> None:
+        """Check if the GitHub provider is healthy and can connect to GitHub."""
+        logger.info("🔍 Checking GitHub provider health...")
+
+        # Check GitHub repository environment variable
+        github_repo = os.getenv("GITHUB_REPOSITORY")
+        if not github_repo or len(github_repo.split("/")) != 2:
+            logger.info("❌ GITHUB_REPOSITORY environment variable not set")
+            logger.info("   Set it to 'owner/repo' format (e.g., 'montagne-dev/lampe')")
+            raise ValueError("GITHUB_REPOSITORY environment variable not set")
+        logger.info(f"✅ GITHUB_REPOSITORY set to: {github_repo}")
+
+        # Check authentication environment variables
+        app_id = os.getenv("LAMPE_GITHUB_APP_ID")
+        private_key = os.getenv("LAMPE_GITHUB_APP_PRIVATE_KEY")
+        token = os.getenv("LAMPE_GITHUB_TOKEN")
+
+        auth_method = None
+        if app_id and private_key:
+            auth_method = "GitHub App"
+            logger.info(f"✅ GitHub App authentication detected (App ID: {app_id})")
+        elif token:
+            auth_method = "User Token"
+            logger.info("✅ User token authentication detected")
+        else:
+            logger.info("❌ No GitHub authentication found")
+            logger.info("   Set either:")
+            logger.info("   - LAMPE_GITHUB_APP_ID and LAMPE_GITHUB_APP_PRIVATE_KEY for GitHub App")
+            logger.info("   - LAMPE_GITHUB_TOKEN for user token authentication")
+            raise ValueError("No GitHub authentication found")
+
+        # Test GitHub connection
+        try:
+            # Test API access by getting repository info
+            repo_info = self.github_client.get_repo(github_repo)
+            logger.info(f"✅ Repository access confirmed: {repo_info.full_name}")
+            logger.info(f"   Description: {repo_info.description or 'No description'}")
+            logger.info(f"   Private: {repo_info.private}")
+            logger.info(f"✅ GitHub {auth_method} authentication successful")
+
+        except Exception as e:
+            logger.info(f"❌ GitHub connection failed: {e}")
+            logger.info("\nTroubleshooting tips:")
+            if auth_method == "GitHub App":
+                logger.info("- Verify LAMPE_GITHUB_APP_ID and LAMPE_GITHUB_APP_PRIVATE_KEY are correct")
+                logger.info("- Ensure the GitHub App is installed on the repository")
+                logger.info("- Check that the private key is properly formatted")
+            else:
+                logger.info("- Verify LAMPE_GITHUB_TOKEN is valid and has appropriate permissions")
+                logger.info("- Ensure the token has 'repo' scope for private repositories")
+            raise
+
     def deliver_pr_description(self, payload: PRDescriptionPayload) -> None:
         """Update the PR description on GitHub."""
         if self.pull_request.number == 0:
