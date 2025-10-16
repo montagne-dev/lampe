@@ -1,6 +1,6 @@
 [project]
 name = "lampe-sdk"
-version = "0.1.0"
+version = "0.1.1"
 description = "lampe-sdk will higlight provide feedback on your code base."
 readme = "README.md"
 author = "antoine@montagne.dev"

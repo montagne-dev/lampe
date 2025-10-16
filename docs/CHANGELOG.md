@@ -1,6 +1,10 @@
 # CHANGELOG
 
 
+## v0.1.1 (2025-10-16)
+### Documentation
+
+* docs: add footer to the documentation (#1) ([`6b4e3cc`](https://github.com/montagne-dev/lampe/commit/6b4e3cc1a4342ce09a3545c65aabf836e0859d49))
 ## v0.1.0 (2025-10-16)
 ### Features
 
