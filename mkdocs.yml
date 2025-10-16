@@ -2,6 +2,7 @@ site_name: Lampe Documentation
 site_description: Lampe - LLM-powered code analysis and documentation tools
 site_author: montagne-dev
 site_url: https://docs.montagne.dev
+repo_url: https://github.com/montagne-dev/lampe
 
 theme:
   name: material
@@ -31,6 +32,12 @@ theme:
     - content.code.copy
     - content.code.annotate
 
+copyright: Copyright &copy; 2024 montagne-dev
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/montagne-dev/lampe
+
 nav:
   - Home: index.md
   - LampeSDK:
@@ -48,6 +55,7 @@ nav:
       - Overview: lampe-cli/index.md
       - CLI: lampe-cli/cli.md
   - Contributing: contributing.md
+  - Changelog: changelog.md
   - Reference: reference.md
 
 plugins:
