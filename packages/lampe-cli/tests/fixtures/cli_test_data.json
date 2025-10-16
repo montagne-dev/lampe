@@ -1,0 +1,43 @@
+{
+  "sample_pr_data": {
+    "number": 123,
+    "title": "Add new feature for user authentication",
+    "body": "This PR implements a new authentication system with JWT tokens.",
+    "base_commit_hash": "abc123def456",
+    "base_branch_name": "main",
+    "head_commit_hash": "def456ghi789",
+    "head_branch_name": "feature/user-auth"
+  },
+  "sample_repo_data": {
+    "local_path": "/tmp/test-repo",
+    "remote_url": "https://github.com/test/repo.git"
+  },
+  "sample_diff": "diff --git a/src/auth.py b/src/auth.py\nnew file mode 100644\nindex 0000000..1234567\n--- /dev/null\n+++ b/src/auth.py\n@@ -0,0 +1,20 @@\n+import jwt\n+from datetime import datetime, timedelta\n+\n+class AuthManager:\n+    def __init__(self, secret_key):\n+        self.secret_key = secret_key\n+\n+    def generate_token(self, user_id):\n+        payload = {\n+            'user_id': user_id,\n+            'exp': datetime.utcnow() + timedelta(hours=24)\n+        }\n+        return jwt.encode(payload, self.secret_key, algorithm='HS256')\n+\n+    def verify_token(self, token):\n+        try:\n+            payload = jwt.decode(token, self.secret_key, algorithms=['HS256'])\n+            return payload['user_id']\n+        except jwt.InvalidTokenError:\n+            return None",
+  "sample_llm_responses": {
+    "default_response": "### What change is being made?\n\nAdded a new authentication system with JWT token support.\n\n### Why are these changes being made?\n\nTo improve security and provide a modern authentication mechanism for the application.",
+    "agentic_response": "### What change is being made?\n\nImplemented a comprehensive authentication system including:\n- JWT token generation and validation\n- Secure token storage and management\n- User session handling\n\n### Why are these changes being made?\n\nTo enhance application security and provide a scalable authentication solution that supports modern web standards.",
+    "markdown_wrapped_response": "```md\n### What change is being made?\n\nAdded authentication system.\n\n### Why are these changes being made?\n\nTo improve security.\n```"
+  },
+  "test_configs": {
+    "default_config": {
+      "files_exclude_patterns": ["*.md", "*.txt"],
+      "files_reinclude_patterns": ["!README.md"],
+      "truncation_tokens": 100000,
+      "timeout": null,
+      "verbose": false
+    },
+    "custom_config": {
+      "files_exclude_patterns": ["*.log", "*.tmp"],
+      "files_reinclude_patterns": null,
+      "truncation_tokens": 50000,
+      "timeout": 30,
+      "verbose": true
+    }
+  },
+  "expected_outputs": {
+    "text_format": "### What change is being made?\n\nAdded a new authentication system with JWT token support.\n\n### Why are these changes being made?\n\nTo improve security and provide a modern authentication mechanism for the application.",
+    "json_format": {
+      "description": "### What change is being made?\n\nAdded a new authentication system with JWT token support.\n\n### Why are these changes being made?\n\nTo improve security and provide a modern authentication mechanism for the application."
+    }
+  }
+}

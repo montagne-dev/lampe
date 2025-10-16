@@ -1,0 +1,103 @@
+name: "LampeCI"
+description: "Supercharge your code reviews and PR documentation with intelligent, AI-powered generation using the Lampe SDK"
+author: "montagne-dev"
+branding:
+  icon: "check-circle"
+  color: "blue"
+
+inputs:
+  command:
+    description: "The Lampe CLI command to run (describe, review, healthcheck)"
+    required: true
+    default: "describe"
+  repo:
+    description: "Repository path (defaults to current directory)"
+    required: false
+    default: "."
+  title:
+    description: "PR title (for local runs)"
+    required: false
+    default: "Pull Request"
+  pr_number:
+    description: "PR number"
+    required: false
+    default: ${{ github.event.number }}
+  base_ref:
+    description: "Base ref for comparison"
+    required: false
+    default: ${{ github.base_ref }}
+  head_ref:
+    description: "Head ref for comparison"
+    required: false
+    default: ${{ github.head_ref }}
+  output:
+    description: "Output provider (auto|console|github|gitlab|bitbucket)"
+    required: false
+    default: "auto"
+  variant:
+    description: "Generation variant (default|agentic)"
+    required: false
+    default: "default"
+  files_exclude:
+    description: "Comma-separated list of file patterns to exclude"
+    required: false
+  files_reinclude:
+    description: "Comma-separated list of file patterns to reinclude"
+    required: false
+  max_tokens:
+    description: "Maximum tokens for truncation"
+    required: false
+    default: "100000"
+  timeout_seconds:
+    description: "Timeout in seconds"
+    required: false
+  verbose:
+    description: "Enable verbose output"
+    required: false
+    default: "false"
+  deepen_length:
+    description: "Git fetch deepen length for merge-base"
+    required: false
+    default: "100"
+runs:
+  using: "composite"
+  steps:
+    - name: "Install uv"
+      uses: astral-sh/setup-uv@v5
+    - name: "Set up Python"
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: "Fetch through merge-base"
+      run: ${{ github.action_path }}/gh_action/scripts/fetch_through_merge_base.sh
+      shell: bash
+      env:
+        BASE_REF: ${{ inputs.base_ref }}
+        HEAD_REF: ${{ inputs.head_ref }}
+        DEEPEN_LENGTH: ${{ inputs.deepen_length }}
+    - name: "Install LampeSDK"
+      run: uv tool install git+https://github.com/montagne-dev/lampe.git#main
+      shell: bash
+    - name: "LampeCI Healthcheck"
+      run: lampe healthcheck
+      shell: bash
+      env:
+        COMMAND: healthcheck
+        VERBOSE: ${{ inputs.verbose }}
+    - name: "Run LampeCI"
+      run: ${{ github.action_path }}/gh_action/scripts/run_lampe.sh
+      shell: bash
+      env:
+        COMMAND: ${{ inputs.command }}
+        REPO: ${{ inputs.repo }}
+        TITLE: ${{ inputs.title }}
+        BASE_REF: ${{ inputs.base_ref }}
+        HEAD_REF: ${{ inputs.head_ref }}
+        OUTPUT: ${{ inputs.output }}
+        VARIANT: ${{ inputs.variant }}
+        FILES_EXCLUDE: ${{ inputs.files_exclude }}
+        FILES_REINCLUDE: ${{ inputs.files_reinclude }}
+        MAX_TOKENS: ${{ inputs.max_tokens }}
+        TIMEOUT_SECONDS: ${{ inputs.timeout_seconds }}
+        VERBOSE: ${{ inputs.verbose }}
+        PR_NUMBER: ${{ inputs.pr_number }}

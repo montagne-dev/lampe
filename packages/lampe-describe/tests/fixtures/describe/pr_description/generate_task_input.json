@@ -1,0 +1,14 @@
+{
+  "repository": {
+    "url": "https://github.com/run-llama/llama_index",
+    "local_path": "/tmp/llama_index"
+  },
+  "pull_request": {
+    "number": 19101,
+    "title": "Adding visualization functions for single/multi agent workflows",
+    "base_commit_hash": "5f3c4403176c8739f5be4e183d6de24372778e24",
+    "base_branch_name": "main",
+    "head_commit_hash": "71bc55741545ec0fc97cf393ba5a7a1b26d0f26e",
+    "head_branch_name": "clelia/agentworkflow-visualization"
+  }
+}

@@ -1,0 +1,16 @@
+[project]
+name = "lampe-describe"
+version = "0.1.0"
+description = "Describe package for lampe-sdk"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+# NOTE: This is needed, because the folder under src isn't lampe_template
+# as expected by the default hatchling build system.
+[tool.hatch.build.targets.wheel]
+packages = ["src/lampe"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
