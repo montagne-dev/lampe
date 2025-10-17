@@ -40,6 +40,11 @@ class Provider(ABC):
         """Deliver a PR description to the configured destination."""
         ...
 
+    @abstractmethod
+    def healthcheck(self) -> None:
+        """Check if the provider is healthy and can connect to the service."""
+        ...
+
     @staticmethod
     def detect_provider_type() -> ProviderType:
         """Detect the appropriate provider type based on available environment variables."""
@@ -51,7 +56,9 @@ class Provider(ABC):
             "LAMPE_GITHUB_APP_ID": ProviderType.GITHUB,
             "LAMPE_GITHUB_APP_PRIVATE_KEY": ProviderType.GITHUB,
             "GITLAB_API_TOKEN": ProviderType.GITLAB,
-            "BITBUCKET_API_TOKEN": ProviderType.BITBUCKET,
+            "LAMPE_BITBUCKET_TOKEN": ProviderType.BITBUCKET,
+            "LAMPE_BITBUCKET_APP_KEY": ProviderType.BITBUCKET,
+            "BITBUCKET_WORKSPACE": ProviderType.BITBUCKET,
         }
 
         for env_var, provider_type in env_var_mapping.items():
@@ -81,6 +88,10 @@ class Provider(ABC):
             from lampe.cli.providers.github import GitHubProvider
 
             return GitHubProvider(repository=repository, pull_request=pull_request)
+        elif provider_name == ProviderType.BITBUCKET:
+            from lampe.cli.providers.bitbucket import BitbucketProvider
+
+            return BitbucketProvider(repository=repository, pull_request=pull_request)
         else:
             raise ValueError(f"Provider type {provider_name} not yet implemented")
 
