@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## v0.2.0 (2025-11-03)
+### Features
+
+* ([`01b10fa`](https://github.com/montagne-dev/lampe/commit/01b10facb45d166006a2c7f5b76c5584ceecc802))
+
+> Add support for bitbucket
 ## v0.1.1 (2025-10-16)
 ### Documentation
 
