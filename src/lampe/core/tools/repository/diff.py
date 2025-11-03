@@ -81,6 +81,7 @@ def get_diff_between_commits(
     files_include_patterns: list[str] | None = None,
     files_reinclude_patterns: list[str] | None = None,
     batch_size: int = 50,
+    include_line_numbers: bool = False,
     repo_path: str = "/tmp/",
 ) -> str:
     """Get the diff between two commits, optionally filtering files by glob patterns.
@@ -112,6 +113,8 @@ def get_diff_between_commits(
         Path to the git repository
     batch_size
         Number of files to process in each batch.
+    include_line_numbers
+        Whether to include line numbers in diff output (default: False)
     Returns
     -------
     :
@@ -149,7 +152,12 @@ def get_diff_between_commits(
 
         diffs = []
         for batch in batched(filtered_files, batch_size):
-            diffs.append(repo.git.diff(base_hash, head_hash, "--", *batch))
+            diff = repo.git.diff(base_hash, head_hash, "--", *batch)
+            if include_line_numbers and diff:
+                # Git diff already includes line numbers in the @@ -X,Y +A,B @@ format
+                # and shows line numbers in the context, so we don't need to modify it
+                pass
+            diffs.append(diff)
         return "\n".join(diffs)
     except GitCommandError as e:
         logger.exception(f"Unexpected error getting diff: {e}")
@@ -175,6 +183,8 @@ def get_diff_for_files(
         Head commit reference (e.g., "main", commit hash). Defaults to "HEAD"
     repo_path
         Path to git repository, by default "/tmp/"
+    batch_size
+        Number of files to process in each batch.
 
     Returns
     -------

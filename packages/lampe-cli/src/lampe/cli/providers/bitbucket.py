@@ -5,7 +5,7 @@ import os
 
 import requests
 
-from lampe.cli.providers.base import PRDescriptionPayload, Provider, update_or_add_text_between_tags
+from lampe.cli.providers.base import PRDescriptionPayload, Provider, PRReviewPayload, update_or_add_text_between_tags
 from lampe.core.data_models.pull_request import PullRequest
 from lampe.core.data_models.repository import Repository
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
@@ -195,3 +195,51 @@ class BitbucketProvider(Provider):
             # Fallback to console output
             logger.info("Description:")
             logger.info(payload.description)
+
+    def deliver_pr_review(self, payload: PRReviewPayload) -> None:
+        """Post PR review comments on Bitbucket."""
+        if self.pull_request.number == 0:
+            raise ValueError("Cannot post Bitbucket PR review for local run")
+
+        try:
+            # Post review comments for each file
+            for review in payload.reviews:
+                if review.get("line_comments"):
+                    # Create review comments for specific lines
+                    for line, comment in review["line_comments"].items():
+                        try:
+                            # Post a comment on the PR
+                            comment_url = (
+                                f"{self.base_url}/2.0/repositories/{self.workspace}/"
+                                f"{self.repo_slug}/pullrequests/{self.pull_request.number}/comments"
+                            )
+                            comment_data = {"content": {"raw": f"**{review['file_path']} (Line {line}):** {comment}"}}
+                            response = requests.post(comment_url, json=comment_data, headers=self.auth_headers)
+                            response.raise_for_status()
+                        except Exception as e:
+                            logger.warning(f"Failed to post comment for {review['file_path']}:{line}: {e}")
+
+                # Post summary comment if no line comments
+                if not review.get("line_comments") and review.get("summary"):
+                    try:
+                        comment_url = (
+                            f"{self.base_url}/2.0/repositories/{self.workspace}/"
+                            f"{self.repo_slug}/pullrequests/{self.pull_request.number}/comments"
+                        )
+                        comment_data = {"content": {"raw": f"**{review['file_path']}:** {review['summary']}"}}
+                        response = requests.post(comment_url, json=comment_data, headers=self.auth_headers)
+                        response.raise_for_status()
+                    except Exception as e:
+                        logger.warning(f"Failed to post summary for {review['file_path']}: {e}")
+
+            logger.info(f"✅ Successfully posted PR #{self.pull_request.number} review comments on Bitbucket")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"❌ Failed to post Bitbucket PR review: {e}")
+            # Fallback to console output
+            logger.info("Review:")
+            logger.info(payload.review_with_title)
+        except Exception as e:
+            logger.error(f"❌ Unexpected error posting Bitbucket PR review: {e}")
+            # Fallback to console output
+            logger.info("Review:")
+            logger.info(payload.review_with_title)

@@ -18,6 +18,24 @@ class PRDescriptionPayload:
         return f"## 🔦 description\n{self.description}"
 
 
+@dataclass
+class PRReviewPayload:
+    reviews: list[dict]  # List of file reviews with inline comments
+
+    @property
+    def review_with_title(self) -> str:
+        review_text = "## 🔍 Code Review\n\n"
+        for review in self.reviews:
+            review_text += f"### {review['file_path']}\n"
+            review_text += f"**Summary:** {review['summary']}\n\n"
+            if review.get("line_comments"):
+                review_text += "**Line Comments:**\n"
+                for line, comment in review["line_comments"].items():
+                    review_text += f"- Line {line}: {comment}\n"
+                review_text += "\n"
+        return review_text
+
+
 class ProviderType(StrEnum):
     """Available provider types."""
 
@@ -38,6 +56,11 @@ class Provider(ABC):
     @abstractmethod
     def deliver_pr_description(self, payload: PRDescriptionPayload) -> None:
         """Deliver a PR description to the configured destination."""
+        ...
+
+    @abstractmethod
+    def deliver_pr_review(self, payload: PRReviewPayload) -> None:
+        """Deliver a PR review to the configured destination."""
         ...
 
     @abstractmethod

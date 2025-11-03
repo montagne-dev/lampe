@@ -5,13 +5,11 @@ from llama_index.core.llms import ChatMessage
 from llama_index.core.llms.function_calling import FunctionCallingLLM
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.tools import FunctionTool, ToolOutput, ToolSelection
-from llama_index.core.workflow import Context, Event, StartEvent, StopEvent, Workflow, step
+from llama_index.core.workflow import Context, Event, StartEvent, Workflow, step
 from llama_index.llms.litellm import LiteLLM
 
 from lampe.core.llmconfig import MODELS
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
-
-logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
 
 
 class InputEvent(Event):
@@ -26,6 +24,11 @@ class FunctionOutputEvent(Event):
     output: ToolOutput
 
 
+class AgentCompleteEvent(Event):
+    output: str | None
+    sources: list[ToolOutput]
+
+
 class FunctionCallingAgent(Workflow):
     def __init__(
         self,
@@ -35,13 +38,14 @@ class FunctionCallingAgent(Workflow):
         system_prompt: str | None = None,
         **kwargs: Any,
     ) -> None:
+        self.logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
+        self.logger.debug("Initializing FunctionCallingAgent with args: %s, kwargs: %s", args, kwargs)
         super().__init__(*args, **kwargs)
         self.tools = tools or []
         self.llm = llm or LiteLLM(
             model=MODELS.GPT_5_NANO_2025_08_07, temperature=1.0, reasoning_effort="low"
         )  # Default to OpenAI LLM
         assert self.llm.metadata.is_function_calling_model
-
         # Store system prompt
         self.system_prompt = system_prompt
 
@@ -73,7 +77,8 @@ class FunctionCallingAgent(Workflow):
 
         return InputEvent(input=chat_history)
 
-    async def handle_llm_input(self, ctx: Context, ev: InputEvent) -> ToolCallEvent | StopEvent:
+    @step
+    async def handle_llm_input(self, ctx: Context, ev: InputEvent) -> ToolCallEvent | AgentCompleteEvent:
         chat_history = ev.input
 
         # stream the response
@@ -86,7 +91,7 @@ class FunctionCallingAgent(Workflow):
         tool_calls = self.llm.get_tool_calls_from_response(response, error_on_no_tool_call=False)
         if not tool_calls:
             sources = await ctx.store.get("sources", default=[])
-            return StopEvent(result={"response": response, "sources": [*sources]})
+            return AgentCompleteEvent(output=response.message.content, sources=sources)
         else:
             return ToolCallEvent(tool_calls=tool_calls)
 
@@ -112,11 +117,11 @@ class FunctionCallingAgent(Workflow):
                 )
                 continue
             try:
-                logger.debug(f"--------------{tool_call.tool_name}------------------")
-                logger.debug(f"kwargs {tool_call.tool_kwargs}")
+                self.logger.debug(f"--------------{tool_call.tool_name}------------------")
+                self.logger.debug(f"kwargs {tool_call.tool_kwargs}")
                 tool_output = tool(**tool_call.tool_kwargs)
-                logger.debug(f"Tool output:\n {tool_output}")
-                logger.debug("--------------------------------")
+                self.logger.debug(f"Tool output:\n {tool_output}")
+                self.logger.debug("--------------------------------")
                 sources.append(tool_output)
                 tool_msgs.append(
                     ChatMessage(role="tool", content=tool_output.content, additional_kwargs=additional_kwargs)

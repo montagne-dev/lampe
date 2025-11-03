@@ -7,7 +7,13 @@ from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
 logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
 
 
-def search_in_files(pattern: str, relative_dir_path: str, commit_reference: str, repo_path: str = "/tmp/") -> str:
+def search_in_files(
+    pattern: str,
+    relative_dir_path: str,
+    commit_reference: str,
+    include_line_numbers: bool = False,
+    repo_path: str = "/tmp/",
+) -> str:
     """Search for a pattern in files within a directory at a specific commit.
 
     Parameters
@@ -18,6 +24,8 @@ def search_in_files(pattern: str, relative_dir_path: str, commit_reference: str,
         Directory path to search in
     commit_reference
         Commit reference to search at
+    include_line_numbers
+        Whether to include line numbers in search results (default: False)
     repo_path
         Path to the git repository, by default "/tmp/"
 
@@ -28,7 +36,10 @@ def search_in_files(pattern: str, relative_dir_path: str, commit_reference: str,
     """
     try:
         repo = Repo(path=repo_path)
-        grep_output = repo.git.grep("-n", pattern, f"{commit_reference}:{relative_dir_path}")
+        if include_line_numbers:
+            grep_output = repo.git.grep("-n", pattern, f"{commit_reference}:{relative_dir_path}")
+        else:
+            grep_output = repo.git.grep(pattern, f"{commit_reference}:{relative_dir_path}")
         if grep_output:
             return f"```grep\n{grep_output}\n```"
         return "No matches found"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from lampe.cli.providers.base import PRDescriptionPayload, Provider
+from lampe.cli.providers.base import PRDescriptionPayload, Provider, PRReviewPayload
 from lampe.core.data_models.pull_request import PullRequest
 from lampe.core.data_models.repository import Repository
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
@@ -19,6 +19,10 @@ class ConsoleProvider(Provider):
     def deliver_pr_description(self, payload: PRDescriptionPayload) -> None:
         """Print the PR description to console."""
         print(payload.description)
+
+    def deliver_pr_review(self, payload: PRReviewPayload) -> None:
+        """Print the PR review to console."""
+        print(payload.review_with_title)
 
     def healthcheck(self) -> None:
         """Check if the console provider is healthy and can connect to the service."""

@@ -47,6 +47,7 @@ def get_file_content_at_commit(
     file_path: str,
     line_start: int | None = None,
     line_end: int | None = None,
+    include_line_numbers: bool = False,
     repo_path: str = "/tmp/",
 ) -> str:
     """Get file content from a specific commit.
@@ -61,6 +62,8 @@ def get_file_content_at_commit(
         Line range start index (0-based) of head_content to extract content from
     line_end
         Line range end index (0-based) of head_content to extract content to
+    include_line_numbers
+        Whether to prefix each line with its line number (default: False)
     repo_path
         Path to the git repository, by default "/tmp/"
 
@@ -81,6 +84,16 @@ def get_file_content_at_commit(
             blob = repo.git.show(f"{commit_hash}:{file_path}")
         if line_start is not None and line_end is not None:
             blob = "\n".join(blob.splitlines()[line_start : line_end + 1])
+
+        if include_line_numbers:
+            lines = blob.splitlines()
+            numbered_lines = []
+            start_line = 1 if line_start is None else line_start + 1
+            for i, line in enumerate(lines):
+                line_number = start_line + i
+                numbered_lines.append(f"{line_number:>6}| {line}")
+            blob = "\n".join(numbered_lines)
+
         return blob
     except GitCommandError as e:
         logger.exception(f"Error getting file content: {e}")

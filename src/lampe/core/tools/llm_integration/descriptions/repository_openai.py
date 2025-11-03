@@ -26,6 +26,7 @@ Returns the unified diff (line-by-line code changes) between the current branch 
 Parameters:
 - base_reference (string): The base branch or commit to compare against.
 - file_paths (list[string], optional): List of specific file paths to get diffs for. If not provided, returns diff for all changed files.
+- include_line_numbers (bool, optional): Whether to include line numbers in diff output. Defaults to False.
 
 Returns:
 - A single string containing the unified diff for the specified files or all changed files.
@@ -33,23 +34,9 @@ Returns:
 Behavioral guidance:
 - For large PRs, use file_paths parameter to get diffs for specific files to avoid context window limitations.
 - If the diff is too large or unclear, consider requesting file contents or smaller diffs for specific files.
+- Git diff already includes line numbers in the @@ -X,Y +A,B @@ format, so include_line_numbers mainly affects display formatting.
 """  # noqa: E501
 
-
-GIT_DIFF_DESCRIPTION = """
-Returns the unified diff (line-by-line code changes) between the current branch (or commit) and a specified base reference. Can return either a full diff or diffs for specific files.
-
-Parameters:
-- base_reference (string): The base branch or commit to compare against.
-- file_paths (list[string], optional): List of specific file paths to get diffs for. If not provided, returns diff for all changed files.
-
-Returns:
-- A single string containing the unified diff for the specified files or all changed files.
-
-Behavioral guidance:
-- For large PRs, use file_paths parameter to get diffs for specific files to avoid context window limitations.
-- If the diff is too large or unclear, consider requesting file contents or smaller diffs for specific files.
-"""  # noqa: E501
 
 SHOW_COMMIT_DESCRIPTION = """
 Shows detailed information and code changes for a specific commit in a git repository.
@@ -76,12 +63,15 @@ Use this tool to access the raw content of a file as it existed at a specific po
 Parameters:
 - commit_reference (string): The commit reference (e.g., 'main', 'HEAD', commit SHA).
 - file_path (string): Path to the file within the repository (relative to repository root).
+- include_line_numbers (bool, optional): Whether to prefix each line with its line number. Defaults to False.
 
 Returns:
 - The complete file content as a string. Returns empty string if the file doesn't exist at the specified commit.
+- If include_line_numbers is True, each line will be prefixed with its line number in format "     1| content"
 
 Behavioral guidance:
 - Use this tool when you need to examine the exact content of a file at a specific commit.
+- Enable include_line_numbers when you need to reference specific line numbers in your analysis.
 """  # noqa: E501
 
 
@@ -94,6 +84,7 @@ Parameters:
 - pattern (string): The pattern to search for in files.
 - relative_dir_path (string): Directory path to search within (relative to repository root).
 - commit (string): The commit reference to search at.
+- include_line_numbers (bool, optional): Whether to include line numbers in search results. Defaults to False.
 
 Returns:
 - Search results as a formatted string showing matching lines with line numbers. Returns "No matches found" if no matches exist.
@@ -101,6 +92,7 @@ Returns:
 Behavioral guidance:
 - Use this tool when you need to locate specific code patterns or text within files at a particular commit.
 - The search is performed using git grep which supports regular expressions for more advanced pattern matching.
+- Enable include_line_numbers when you need to reference specific line numbers in your analysis.
 """  # noqa: E501
 
 

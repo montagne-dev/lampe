@@ -11,6 +11,7 @@ resolution-markers = [
 members = [
     "lampe-cli",
     "lampe-describe",
+    "lampe-review",
     "lampe-sdk",
     "lampe-template",
 ]
@@ -1179,6 +1180,11 @@ version = "0.1.0"
 source = { editable = "packages/lampe-describe" }
 
 [[package]]
+name = "lampe-review"
+version = "0.1.0"
+source = { editable = "packages/lampe-review" }
+
+[[package]]
 name = "lampe-sdk"
 version = "0.1.1"
 source = { editable = "." }
@@ -1187,6 +1193,7 @@ dependencies = [
     { name = "gitpython" },
     { name = "lampe-cli" },
     { name = "lampe-describe" },
+    { name = "lampe-review" },
     { name = "lampe-template" },
     { name = "llama-index-core" },
     { name = "llama-index-llms-litellm" },
@@ -1217,6 +1224,7 @@ requires-dist = [
     { name = "gitpython", specifier = ">=3.1.45" },
     { name = "lampe-cli", editable = "packages/lampe-cli" },
     { name = "lampe-describe", editable = "packages/lampe-describe" },
+    { name = "lampe-review", editable = "packages/lampe-review" },
     { name = "lampe-template", editable = "packages/lampe-template" },
     { name = "llama-index-core", specifier = ">=0.14.1" },
     { name = "llama-index-llms-litellm", specifier = ">=0.6.3" },
