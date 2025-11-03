@@ -60,10 +60,6 @@ add_common_arguments() {
     add_file_reinclusions
 
     # Add optional arguments if provided
-    if [ -n "$MAX_TOKENS" ]; then
-        LAMPE_ARGS+=("--max-tokens" "$MAX_TOKENS")
-    fi
-
     if [ -n "$TIMEOUT_SECONDS" ]; then
         LAMPE_ARGS+=("--timeout-seconds" "$TIMEOUT_SECONDS")
     fi
@@ -81,6 +77,9 @@ case "$COMMAND" in
     "describe")
         LAMPE_ARGS+=("describe")
         add_common_arguments
+        if [ -n "$MAX_TOKENS" ]; then
+            LAMPE_ARGS+=("--max-tokens" "$MAX_TOKENS")
+        fi
         ;;
 
     "review")
