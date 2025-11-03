@@ -3,6 +3,7 @@ import logging
 from git import GitCommandError, Repo
 
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
+from lampe.core.tools.repository.encoding import sanitize_utf8
 from lampe.core.tools.repository.management import LocalCommitsAvailability
 
 logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
@@ -82,6 +83,7 @@ def get_file_content_at_commit(
         repo = Repo(path=repo_path)
         with LocalCommitsAvailability(repo_path, [commit_hash]):
             blob = repo.git.show(f"{commit_hash}:{file_path}")
+            blob = sanitize_utf8(blob)
         if line_start is not None and line_end is not None:
             blob = "\n".join(blob.splitlines()[line_start : line_end + 1])
 

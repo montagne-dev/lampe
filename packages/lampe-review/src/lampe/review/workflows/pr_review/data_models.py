@@ -22,6 +22,13 @@ class ReviewDepth(str, Enum):
     COMPREHENSIVE = "comprehensive"
 
 
+class ReviewType(str, Enum):
+    """Review strategy types for PR reviews."""
+
+    MULTI_AGENT = "multi-agent"
+    DIFF_BY_DIFF = "diff-by-diff"
+
+
 class ReviewComment(BaseModel):
     """Structured comment with metadata."""
 
@@ -36,12 +43,14 @@ class FileReview(BaseModel):
     """Review for a specific file with inline comments."""
 
     file_path: str = Field(..., description="Path to the reviewed file")
-    line_comments: dict[int, str] = Field(default_factory=dict, description="Line number to comment mapping")
+    line_comments: dict[str, str] = Field(default_factory=dict, description="Line number to comment mapping")
     structured_comments: list[ReviewComment] = Field(
         default_factory=list, description="Structured comments with metadata"
     )
     summary: str = Field(..., description="Overall summary of the file review")
     agent_name: Optional[str] = Field(default=None, description="Name of the agent that performed this review")
+
+    
 
 
 class AgentReviewInput(BaseModel):
@@ -52,6 +61,9 @@ class AgentReviewInput(BaseModel):
     files_changed: str = Field(..., description="Formatted string of changed files with stats")
     review_depth: ReviewDepth = Field(default=ReviewDepth.STANDARD, description="Depth of review analysis")
     custom_guidelines: Optional[list[str]] = Field(default=None, description="Custom review guidelines to focus on")
+    target_file_path: Optional[str] = Field(
+        default=None, description="Specific file path to focus on (for diff-focused agents)"
+    )
 
 
 class AgentReviewOutput(BaseModel):
