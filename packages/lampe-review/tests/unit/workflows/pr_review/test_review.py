@@ -3,11 +3,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from lampe.cli.orchestrators.pr_review import PRReviewStart
 from lampe.core.data_models import PullRequest, Repository
-from lampe.review.workflows.pr_review.data_models import ReviewDepth
-from lampe.review.workflows.pr_review.review_multi_file import (
-    PRReviewFnAgentWorkflow,
-    generate_pr_review,
+from lampe.review.workflows.pr_review.data_models import PRReviewInput, ReviewDepth
+from lampe.review.workflows.pr_review.multi_agent_pipeline import (
+    MultiAgentPipelineWorkflow,
+    generate_multi_agent_pr_review,
 )
 
 
@@ -51,21 +52,23 @@ def sample_pull_request():
 @pytest.mark.asyncio
 async def test_pr_review_workflow_run(mocker, mock_llm_response, sample_repository, sample_pull_request):
     mocker.patch(
-        "lampe.review.workflows.pr_review.review_multi_file.list_changed_files",
+        "lampe.review.workflows.pr_review.multi_agent_pipeline.list_changed_files",
         return_value="src/example.py | +10 -5",
     )
 
-    workflow = PRReviewFnAgentWorkflow(timeout=None, verbose=False)
+    workflow = MultiAgentPipelineWorkflow(agents=[], timeout=None, verbose=False)
 
     with patch("llama_index.llms.litellm.LiteLLM.achat", return_value=mock_llm_response) as mock_achat:
-        result = await workflow.execute(
-            input={
-                "repository": sample_repository,
-                "pull_request": sample_pull_request,
-                "review_depth": ReviewDepth.STANDARD,
-                "custom_guidelines": None,
-                "files_exclude_patterns": None,
-            }
+        result = await workflow.run(
+            start_event=PRReviewStart(
+                input=PRReviewInput(
+                    repository=sample_repository,
+                    pull_request=sample_pull_request,
+                    review_depth=ReviewDepth.STANDARD,
+                    custom_guidelines=None,
+                    files_exclude_patterns=None,
+                )
+            )
         )
         assert result.reviews[0]["file_path"] == "src/example.py"
         assert result.reviews[0]["line_comments"]["15"] == "Consider adding null check here"
@@ -76,7 +79,7 @@ async def test_pr_review_workflow_run(mocker, mock_llm_response, sample_reposito
 @pytest.mark.asyncio
 async def test_generate_pr_review_function(mocker, sample_repository, sample_pull_request):
     mocker.patch(
-        "lampe.review.workflows.pr_review.review_multi_file.list_changed_files",
+        "lampe.review.workflows.pr_review.multi_agent_pipeline.list_changed_files",
         return_value="src/example.py | +10 -5",
     )
 
@@ -95,7 +98,7 @@ async def test_generate_pr_review_function(mocker, sample_repository, sample_pul
         }"""
         mock_achat.return_value = mock_response
 
-        result = await generate_pr_review(
+        result = await generate_multi_agent_pr_review(
             repository=sample_repository,
             pull_request=sample_pull_request,
             review_depth=ReviewDepth.BASIC,
@@ -106,35 +109,3 @@ async def test_generate_pr_review_function(mocker, sample_repository, sample_pul
         assert result.reviews[0]["file_path"] == "src/example.py"
         assert result.reviews[0]["line_comments"]["15"] == "Consider adding null check here"
         assert result.reviews[0]["summary"] == "Good implementation"
-
-
-@pytest.mark.asyncio
-async def test_custom_guidelines_formatting(mocker, sample_repository, sample_pull_request):
-    mocker.patch(
-        "lampe.review.workflows.pr_review.review_multi_file.list_changed_files",
-        return_value="src/example.py | +10 -5",
-    )
-
-    workflow = PRReviewFnAgentWorkflow(timeout=None, verbose=False)
-
-    # Test that custom guidelines are properly formatted
-    guidelines = ["Focus on security vulnerabilities", "Check for performance issues"]
-    custom_guidelines_section = workflow._format_custom_guidelines_section(guidelines)
-
-    assert "Focus on security vulnerabilities" in custom_guidelines_section
-    assert "Check for performance issues" in custom_guidelines_section
-    assert "Focus your review ONLY on these specific guidelines" in custom_guidelines_section
-
-
-@pytest.mark.asyncio
-async def test_no_custom_guidelines_formatting(sample_repository, sample_pull_request):
-    workflow = PRReviewFnAgentWorkflow(timeout=None, verbose=False)
-
-    # Test that no guidelines returns empty string
-    custom_guidelines_section = workflow._format_custom_guidelines_section(None)
-    assert custom_guidelines_section == ""
-
-    custom_guidelines_section = workflow._format_custom_guidelines_section([])
-    assert custom_guidelines_section == ""
-
-

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -15,14 +15,14 @@ class ComplexModel(BaseModel):
     id: int
     name: str
     email: Optional[str] = None
-    tags: List[str] = []
-    metadata: Dict[str, Any] = {}
+    tags: list[str] = []
+    metadata: dict[str, Any] = {}
 
 
 class NestedModel(BaseModel):
     user: SimpleModel
-    settings: Dict[str, bool]
-    items: List[int]
+    settings: dict[str, bool]
+    items: list[int]
 
 
 class NestedModelWithLiteralBlock(BaseModel):

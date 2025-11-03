@@ -88,7 +88,7 @@ def get_file_content_at_commit(
         if include_line_numbers:
             lines = blob.splitlines()
             numbered_lines = []
-            start_line = 1 if line_start is None else line_start + 1
+            start_line = 0 if line_start is None else line_start
             for i, line in enumerate(lines):
                 line_number = start_line + i
                 numbered_lines.append(f"{line_number:>6}| {line}")

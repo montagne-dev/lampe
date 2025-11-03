@@ -20,7 +20,7 @@ Focus ONLY on design pattern and architectural concerns:
 - Design pattern consistency
 
 Review Process:
-1. Analyze the overall structure and organization
+1. Analyze the overall structure
 2. Check for adherence to SOLID principles
 3. Identify design pattern usage and consistency
 4. Look for architectural violations
@@ -49,7 +49,6 @@ Provide your findings in JSON format:
 
 Be specific about:
 - Exact line numbers where issues are found
-- Severity level (critical, high, medium, low)
 - Specific design pattern or principle violation
 - Recommended architectural improvement
 - Consistency with existing codebase patterns

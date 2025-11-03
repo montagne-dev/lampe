@@ -5,7 +5,7 @@ import pytest
 
 from lampe.core.data_models import PullRequest, Repository
 from lampe.review.workflows.pr_review.data_models import ReviewDepth
-from lampe.review.workflows.pr_review.review_multi_file import generate_pr_review
+from lampe.review.workflows.pr_review.multi_agent_pipeline import generate_multi_agent_pr_review
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ async def test_integration_review_workflow(mocker, sample_repository, sample_pul
     """Integration test for the complete review workflow."""
     # Mock the git tools
     mocker.patch(
-        "lampe.review.workflows.pr_review.review_multi_file.list_changed_files",
+        "lampe.review.workflows.pr_review.multi_agent_pipeline.list_changed_files",
         return_value="src/example.py | +10 -5",
     )
 
@@ -60,7 +60,7 @@ async def test_integration_review_workflow(mocker, sample_repository, sample_pul
         }"""
         mock_achat.return_value = mock_response
 
-        result = await generate_pr_review(
+        result = await generate_multi_agent_pr_review(
             repository=sample_repository,
             pull_request=sample_pull_request,
             review_depth=ReviewDepth.COMPREHENSIVE,
@@ -89,7 +89,7 @@ async def test_integration_review_workflow(mocker, sample_repository, sample_pul
 async def test_different_review_depths(mocker, sample_repository, sample_pull_request):
     """Test that different review depths work correctly."""
     mocker.patch(
-        "lampe.review.workflows.pr_review.review_multi_file.list_changed_files",
+        "lampe.review.workflows.pr_review.multi_agent_pipeline.list_changed_files",
         return_value="src/example.py | +10 -5",
     )
 
@@ -107,7 +107,7 @@ async def test_different_review_depths(mocker, sample_repository, sample_pull_re
         mock_achat.return_value = mock_response
 
         # Test basic review
-        result_basic = await generate_pr_review(
+        result_basic = await generate_multi_agent_pr_review(
             repository=sample_repository,
             pull_request=sample_pull_request,
             review_depth=ReviewDepth.BASIC,
@@ -116,7 +116,7 @@ async def test_different_review_depths(mocker, sample_repository, sample_pull_re
         assert result_basic.reviews[0]["summary"] == "Basic review completed"
 
         # Test standard review
-        result_standard = await generate_pr_review(
+        result_standard = await generate_multi_agent_pr_review(
             repository=sample_repository,
             pull_request=sample_pull_request,
             review_depth=ReviewDepth.STANDARD,
@@ -124,11 +124,9 @@ async def test_different_review_depths(mocker, sample_repository, sample_pull_re
         assert len(result_standard.reviews) == 1
 
         # Test comprehensive review
-        result_comprehensive = await generate_pr_review(
+        result_comprehensive = await generate_multi_agent_pr_review(
             repository=sample_repository,
             pull_request=sample_pull_request,
             review_depth=ReviewDepth.COMPREHENSIVE,
         )
         assert len(result_comprehensive.reviews) == 1
-
-

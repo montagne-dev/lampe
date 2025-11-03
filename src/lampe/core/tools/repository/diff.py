@@ -180,7 +180,7 @@ def get_diff_for_files(
     file_paths
         List of file paths to get diff for
     head_reference
-        Head commit reference (e.g., "main", commit hash). Defaults to "HEAD"
+        Head commit reference (e.g., "feature", commit hash). Defaults to "HEAD"
     repo_path
         Path to git repository, by default "/tmp/"
     batch_size
@@ -192,19 +192,20 @@ def get_diff_for_files(
         Formatted string containing diffs for specified files or all changed files
     """
     repo = Repo(path=repo_path)
-    if file_paths:
-        # Get diff for specific files
-        diffs = []
-        for batch_file_paths in batched(iterable=file_paths, n=batch_size):
-            try:
-                diff = repo.git.diff(base_reference, head_reference, "--", *batch_file_paths)
-                if diff:
-                    diffs.append(diff)
-            except GitCommandError:
-                # Skip files that don't exist or can't be diffed
-                logger.debug(f"Files {batch_file_paths} not found or can't be diffed in get_diff_for_files")
-                continue
-        return "\n".join(diffs)
-    else:
-        # Get diff for all changed files
-        return repo.git.diff(base_reference, head_reference)
+    with LocalCommitsAvailability(repo_path, [base_reference, head_reference]):
+        if file_paths:
+            # Get diff for specific files
+            diffs = []
+            for batch_file_paths in batched(iterable=file_paths, n=batch_size):
+                try:
+                    diff = repo.git.diff(base_reference, head_reference, "--", *batch_file_paths)
+                    if diff:
+                        diffs.append(diff)
+                except GitCommandError:
+                    # Skip files that don't exist or can't be diffed
+                    logger.debug(f"Files {batch_file_paths} not found or can't be diffed in get_diff_for_files")
+                    continue
+            return "\n".join(diffs)
+        else:
+            # Get diff for all changed files
+            return repo.git.diff(base_reference, head_reference)

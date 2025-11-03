@@ -1,7 +1,6 @@
 from lampe.review.workflows.pr_review import PRReviewWorkflow
-from lampe.review.workflows.pr_review.review_multi_file import (
-    main as generate_pr_review_entrypoint,
+from lampe.review.workflows.pr_review.multi_agent_pipeline import (
+    main as generate_multi_agent_pr_review,
 )
 
-__all__ = ["PRReviewWorkflow", "generate_pr_review_entrypoint"]
-
+__all__ = ["PRReviewWorkflow", "generate_multi_agent_pr_review"]

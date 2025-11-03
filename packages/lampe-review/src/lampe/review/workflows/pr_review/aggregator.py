@@ -1,7 +1,6 @@
 """Review aggregator for merging and deduplicating agent findings."""
 
 from collections import defaultdict
-from typing import List
 
 from lampe.review.workflows.pr_review.data_models import (
     AgentReviewOutput,
@@ -13,8 +12,9 @@ from lampe.review.workflows.pr_review.data_models import (
 class ReviewAggregator:
     """Aggregates reviews from multiple agents and deduplicates findings."""
 
-    def aggregate_reviews(self, agent_reviews: List[AgentReviewOutput]) -> List[FileReview]:
+    def aggregate_reviews(self, agent_reviews: list[AgentReviewOutput]) -> list[FileReview]:
         """Aggregate reviews from all agents into a cohesive output."""
+        # TODO: Keep the metadata sources from all agent linked to the issue
         # Group reviews by file path
         file_reviews = defaultdict(list)
 
@@ -31,7 +31,7 @@ class ReviewAggregator:
 
         return aggregated_reviews
 
-    def _merge_file_reviews(self, file_path: str, reviews: List[FileReview]) -> FileReview:
+    def _merge_file_reviews(self, file_path: str, reviews: list[FileReview]) -> FileReview:
         """Merge multiple reviews for the same file."""
         # Combine all line comments
         all_line_comments = {}
@@ -73,7 +73,7 @@ class ReviewAggregator:
             agent_name=", ".join(set(agent_names)) if agent_names else None,
         )
 
-    def _deduplicate_comments(self, comments: List[ReviewComment]) -> List[ReviewComment]:
+    def _deduplicate_comments(self, comments: list[ReviewComment]) -> list[ReviewComment]:
         """Remove duplicate or very similar comments."""
         if not comments:
             return []
@@ -99,7 +99,7 @@ class ReviewAggregator:
 
         return deduplicated
 
-    def _merge_similar_comments(self, comments: List[ReviewComment]) -> ReviewComment:
+    def _merge_similar_comments(self, comments: list[ReviewComment]) -> ReviewComment | None:
         """Merge similar comments from different agents."""
         if not comments:
             return None
@@ -120,7 +120,7 @@ class ReviewAggregator:
             agent_name=combined_agents,
         )
 
-    def _create_combined_summary(self, summaries: List[str], agent_names: List[str]) -> str:
+    def _create_combined_summary(self, summaries: list[str], agent_names: list[str]) -> str:
         """Create a combined summary from all agent summaries."""
         if not summaries:
             return "Multi-agent review completed"

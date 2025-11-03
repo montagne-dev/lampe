@@ -153,32 +153,46 @@ class GitHubProvider(Provider):
             repo = self.github_client.get_repo(f"{self.owner}/{self.repo_name}")
             pull_request = repo.get_pull(self.pull_request.number)
 
-            # Post review comments for each file
-            for review in payload.reviews:
-                if review.get("line_comments"):
-                    # Create review comments for specific lines
-                    for line, comment in review["line_comments"].items():
-                        try:
-                            # Get the file content to find the correct line
-                            file_content = repo.get_contents(
-                                review["file_path"], ref=self.pull_request.head_commit_hash
-                            )
-                            # Post a review comment
-                            pull_request.create_review_comment(
-                                body=comment, commit=pull_request.head.sha, path=review["file_path"], line=int(line)
-                            )
-                        except Exception as e:
-                            logger.warning(f"Failed to post comment for {review['file_path']}:{line}: {e}")
-                            # Fallback: post as general comment
-                            pull_request.create_issue_comment(f"**{review['file_path']} (Line {line}):** {comment}")
+            # Post review comments for each agent review
+            for agent_review in payload.reviews:
+                # Post agent summary comment
+                if agent_review.summary:
+                    try:
+                        pull_request.create_issue_comment(
+                            f"## {agent_review.agent_name}\n\n"
+                            f"**Focus Areas:** {', '.join(agent_review.focus_areas)}\n\n"
+                            f"{agent_review.summary}"
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to post agent summary for {agent_review.agent_name}: {e}")
 
-                # Post summary comment if no line comments
-                if not review.get("line_comments") and review.get("summary"):
-                    pull_request.create_issue_comment(f"**{review['file_path']}:** {review['summary']}")
+                # Post file-specific comments
+                for file_review in agent_review.reviews:
+                    if file_review.line_comments:
+                        # Create review comments for specific lines
+                        for line, comment in file_review.line_comments.items():
+                            try:
+                                # Post a review comment
+                                pull_request.create_review_comment(
+                                    body=f"## 🔦🐛\n{comment}",
+                                    commit=pull_request.head.sha,
+                                    path=file_review.file_path,
+                                    line=int(line),
+                                )
+                            except Exception as e:
+                                logger.warning(f"Failed to post comment for {file_review.file_path}:{line}: {e}")
+                                # Fallback: post as general comment
+                                pull_request.create_issue_comment(
+                                    f"**{file_review.file_path} (Line {line}):** {comment}"
+                                )
+
+                    # Post summary comment if no line comments
+                    if not file_review.line_comments and file_review.summary:
+                        pull_request.create_issue_comment(f"**{file_review.file_path}:** {file_review.summary}")
 
             logger.info(f"✅ Successfully posted PR #{self.pull_request.number} review comments on GitHub")
         except Exception as e:
             logger.info(f"❌ Failed to post GitHub PR review: {e}")
             # Fallback to console output
             logger.info("Review:")
-            logger.info(payload.review_with_title)
+            logger.info(payload.review_markdown)

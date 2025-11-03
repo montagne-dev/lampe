@@ -14,6 +14,7 @@ from lampe.cli.orchestrators.pr_review import (
 from lampe.cli.providers.base import Provider
 from lampe.core import initialize
 from lampe.core.data_models import PullRequest, Repository
+from lampe.review.workflows.pr_review.agents import DefaultAgent
 from lampe.review.workflows.pr_review.data_models import ReviewDepth
 
 
@@ -50,6 +51,7 @@ def review(
         review_depth=review_depth,
         custom_guidelines=guidelines,
         files_exclude_patterns=files_exclude,
+        agents_required=[DefaultAgent],
         timeout=timeout,
         verbose=verbose,
     )
@@ -61,5 +63,3 @@ def review(
         await workflow_task.run(start_event=PRReviewStart(repository=repo_model, pull_request=pr_model, config=pr_cfg))
 
     asyncio.run(_run())
-
-
