@@ -55,15 +55,6 @@ pipelines:
             - lampe describe --repo . --base $MERGE_BASE --head $BITBUCKET_COMMIT --title "$BITBUCKET_PR_TITLE" --output bitbucket
           services:
             - docker
-          env:
-            # Required LLM API keys
-            - OPENAI_API_KEY: $OPENAI_API_KEY
-            - ANTHROPIC_API_KEY: $ANTHROPIC_API_KEY
-            # Bitbucket authentication (choose one)
-            - LAMPE_BITBUCKET_TOKEN: $LAMPE_BITBUCKET_TOKEN
-            # OR for Bitbucket App authentication:
-            # - LAMPE_BITBUCKET_APP_KEY: $LAMPE_BITBUCKET_APP_KEY
-            # - LAMPE_BITBUCKET_APP_SECRET: $LAMPE_BITBUCKET_APP_SECRET
 ```
 
 ## Manual Pipeline Triggers
