@@ -23,7 +23,7 @@ fi
 # Install Lampe CLI if not already available
 if ! command -v lampe &> /dev/null; then
     echo "Lampe CLI not found, installing from source..."
-    uv tool install git+https://github.com/montagne-dev/lampe.git@v0.1.0
+    uv tool install git+https://github.com/montagne-dev/lampe.git@feat/code-review-diff-by-diff
 else
     echo "Lampe CLI is already available."
 fi
