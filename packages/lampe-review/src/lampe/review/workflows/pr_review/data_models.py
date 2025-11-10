@@ -50,8 +50,6 @@ class FileReview(BaseModel):
     summary: str = Field(..., description="Overall summary of the file review")
     agent_name: Optional[str] = Field(default=None, description="Name of the agent that performed this review")
 
-    
-
 
 class AgentReviewInput(BaseModel):
     """Input for individual specialized agents."""

@@ -61,4 +61,3 @@ Ignore other potential issues that don't relate to your expertise.
 Use the available tools to examine the code changes and provide detailed feedback.
 Output your findings in the required JSON format with specific line numbers and severity levels.
 """
-

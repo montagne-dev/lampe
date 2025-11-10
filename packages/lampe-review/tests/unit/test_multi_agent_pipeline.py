@@ -78,7 +78,10 @@ async def test_multi_agent_pipeline_execution(mocker, mock_repository, mock_pull
     # Execute pipeline using the workflow
     with patch("llama_index.llms.litellm.LiteLLM.achat") as mock_achat:
         mock_response = MagicMock()
-        mock_response.message.content = '{"reviews": [{"file_path": "test.py", "line_comments": {"1": "Test comment"}, "summary": "Test summary"}], "summary": "Test agent summary"}'
+        mock_response.message.content = (
+            '{"reviews": [{"file_path": "test.py", "line_comments": {"1": "Test comment"}, '
+            '"summary": "Test summary"}], "summary": "Test agent summary"}'
+        )
         mock_achat.return_value = mock_response
 
         result = await generate_multi_agent_pr_review(

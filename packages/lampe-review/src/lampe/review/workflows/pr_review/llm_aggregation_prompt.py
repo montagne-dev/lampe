@@ -101,4 +101,3 @@ Each agent reviewed one specific file's diff to find bugs.
 
 Provide your cleaned and aggregated reviews in JSON format following the output structure specified.
 """  # noqa: E501
-

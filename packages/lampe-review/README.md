@@ -78,5 +78,3 @@ This will add the package to the dependencies, update the lockfile, and install 
 ## Structure
 
 See [packages/lampe-template/README.md](/packages/lampe-template/README.md) for details about the structure.
-
-
