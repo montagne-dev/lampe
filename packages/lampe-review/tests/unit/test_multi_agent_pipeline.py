@@ -7,7 +7,6 @@ import pytest
 from lampe.review.workflows.pr_review.data_models import (
     AgentReviewOutput,
     FileReview,
-    PRReviewInput,
     PullRequest,
     Repository,
     ReviewDepth,
@@ -46,7 +45,10 @@ def mock_agent_output():
         focus_areas=["test"],
         reviews=[
             FileReview(
-                file_path="test.py", line_comments={"1": "Test comment"}, summary="Test summary", agent_name="Test Agent"
+                file_path="test.py",
+                line_comments={"1": "Test comment"},
+                summary="Test summary",
+                agent_name="Test Agent",
             )
         ],
         summary="Test agent summary",
@@ -78,7 +80,7 @@ async def test_multi_agent_pipeline_execution(mocker, mock_repository, mock_pull
         mock_response = MagicMock()
         mock_response.message.content = '{"reviews": [{"file_path": "test.py", "line_comments": {"1": "Test comment"}, "summary": "Test summary"}], "summary": "Test agent summary"}'
         mock_achat.return_value = mock_response
-        
+
         result = await generate_multi_agent_pr_review(
             repository=mock_repository,
             pull_request=mock_pull_request,
@@ -107,7 +109,7 @@ async def test_agent_failure_handling(mocker, mock_repository, mock_pull_request
         mock_response = MagicMock()
         mock_response.message.content = '{"reviews": [], "summary": "Success"}'
         mock_achat.return_value = mock_response
-        
+
         result = await generate_multi_agent_pr_review(
             repository=mock_repository,
             pull_request=mock_pull_request,
