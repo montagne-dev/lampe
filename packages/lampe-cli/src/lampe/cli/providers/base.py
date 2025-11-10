@@ -52,7 +52,10 @@ class PRReviewPayload:
             if agent_review.sources:
                 review_text += "**Sources:**\n"
                 for source in agent_review.sources:
-                    review_text += f"- **{source.tool_name}**: {source.tool_output.content}\n"
+                    if isinstance(source.tool_output, str):
+                        review_text += f"- **{source.tool_name}**: {source.tool_output}\n"
+                    else:
+                        review_text += f"- **{source.tool_name}**: {source.tool_output.content}\n"
                 review_text += "\n"
 
             review_text += "---\n\n"

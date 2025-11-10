@@ -3,6 +3,7 @@ import logging
 from git import Repo
 
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
+from lampe.core.tools.repository.encoding import sanitize_utf8
 
 logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
 
@@ -43,7 +44,8 @@ def show_commit(commit_reference: str, repo_path: str = "/tmp/") -> str:
     for d in diff:
         output.append(f"\n--- {d.a_path}\n+++ {d.b_path}\n")
         if d.diff:
-            output.append(str(d.diff))
+            diff_str = str(d.diff)
+            output.append(sanitize_utf8(diff_str))
     return "".join(output)
 
 

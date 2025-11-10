@@ -3,9 +3,11 @@ from fnmatch import fnmatch
 from itertools import batched
 
 from git import GitCommandError, Repo
+from pydantic import BaseModel, Field
 
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
 from lampe.core.tools.repository.content import get_file_size_at_commit
+from lampe.core.tools.repository.encoding import sanitize_utf8
 from lampe.core.tools.repository.exceptions import DiffNotFoundError
 from lampe.core.tools.repository.management import LocalCommitsAvailability
 
@@ -153,11 +155,12 @@ def get_diff_between_commits(
         diffs = []
         for batch in batched(filtered_files, batch_size):
             diff = repo.git.diff(base_hash, head_hash, "--", *batch)
-            if include_line_numbers and diff:
+            if diff:
+                diffs.append(sanitize_utf8(diff))
+            elif include_line_numbers:
                 # Git diff already includes line numbers in the @@ -X,Y +A,B @@ format
                 # and shows line numbers in the context, so we don't need to modify it
                 pass
-            diffs.append(diff)
         return "\n".join(diffs)
     except GitCommandError as e:
         logger.exception(f"Unexpected error getting diff: {e}")
@@ -200,7 +203,7 @@ def get_diff_for_files(
                 try:
                     diff = repo.git.diff(base_reference, head_reference, "--", *batch_file_paths)
                     if diff:
-                        diffs.append(diff)
+                        diffs.append(sanitize_utf8(diff))
                 except GitCommandError:
                     # Skip files that don't exist or can't be diffed
                     logger.debug(f"Files {batch_file_paths} not found or can't be diffed in get_diff_for_files")
@@ -208,4 +211,81 @@ def get_diff_for_files(
             return "\n".join(diffs)
         else:
             # Get diff for all changed files
-            return repo.git.diff(base_reference, head_reference)
+            diff = repo.git.diff(base_reference, head_reference)
+            return sanitize_utf8(diff)
+
+
+class FileDiffInfo(BaseModel):
+    """Information about a single file diff."""
+
+    file_path: str = Field(..., description="Path to the changed file")
+    status: str = Field(..., description="File status: A (added), D (deleted), M (modified)")
+    additions: int = Field(..., description="Number of lines added")
+    deletions: int = Field(..., description="Number of lines deleted")
+    size_kb: int = Field(..., description="File size in KB")
+
+
+def list_changed_files_as_objects(
+    base_reference: str, head_reference: str = "HEAD", repo_path: str = "/tmp/"
+) -> list[FileDiffInfo]:
+    """List files changed between base reference and HEAD as structured objects.
+
+    Parameters
+    ----------
+    base_reference
+        Git reference (commit hash, branch name, etc.) to compare against HEAD
+    head_reference
+        Git reference (commit hash, branch name, etc.) to compare against base reference. Defaults to "HEAD"
+    repo_path
+        Path to git repository, by default "/tmp/"
+
+    Returns
+    -------
+    list[FileDiffInfo]
+        List of FileDiffInfo objects for each changed file
+
+    Raises
+    ------
+    GitCommandError
+        If there is an error executing git commands
+    """
+    repo = Repo(path=repo_path)
+    numstat = repo.git.diff(base_reference, head_reference, "--numstat")
+    status_output = repo.git.diff(base_reference, head_reference, "--name-status")
+
+    status_map = {}
+    for line in status_output.splitlines():
+        if line:
+            parts = line.split("\t")
+            if len(parts) >= 2:
+                status, path = parts[0], parts[-1]
+                status_map[path] = "A" if status == "A" else "D" if status == "D" else "M"
+
+    result = []
+    for line in numstat.splitlines():
+        parts = line.split("\t")
+        if len(parts) == 3:
+            additions, deletions, file_path = parts
+            try:
+                additions = int(additions)
+            except ValueError:
+                additions = 0
+            try:
+                deletions = int(deletions)
+            except ValueError:
+                deletions = 0
+            try:
+                size_kb = get_file_size_at_commit(file_path, head_reference, repo_path)
+            except GitCommandError as e:
+                size_kb = 0
+                logger.exception(f"During list_changed_files_as_objects, error getting file size: {e}, continuing...")
+
+            status = status_map.get(file_path, "M")
+
+            result.append(
+                FileDiffInfo(
+                    file_path=file_path, status=status, additions=additions, deletions=deletions, size_kb=size_kb
+                )
+            )
+
+    return sorted(result, key=lambda x: x.file_path)

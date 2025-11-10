@@ -3,6 +3,7 @@ import logging
 from git import GitCommandError, Repo
 
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
+from lampe.core.tools.repository.encoding import sanitize_utf8
 
 logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
 
@@ -36,11 +37,13 @@ def search_in_files(
     """
     try:
         repo = Repo(path=repo_path)
+        commit_reference_path = f"{commit_reference}:{relative_dir_path if relative_dir_path else '.'}"
         if include_line_numbers:
-            grep_output = repo.git.grep("-n", pattern, f"{commit_reference}:{relative_dir_path}")
+            grep_output = repo.git.grep("-n", pattern, commit_reference_path)
         else:
-            grep_output = repo.git.grep(pattern, f"{commit_reference}:{relative_dir_path}")
+            grep_output = repo.git.grep(pattern, commit_reference_path)
         if grep_output:
+            grep_output = sanitize_utf8(grep_output)
             return f"```grep\n{grep_output}\n```"
         return "No matches found"
     except GitCommandError as e:
@@ -67,7 +70,9 @@ def find_files_by_pattern(pattern: str, repo_path: str = "/tmp/") -> str:
     repo = Repo(path=repo_path)
     try:
         # Filter files matching pattern using git's pathspec matching
-        matching = repo.git.ls_files("--", pattern).splitlines()
+        ls_output = repo.git.ls_files("--", pattern)
+        ls_output = sanitize_utf8(ls_output)
+        matching = ls_output.splitlines()
 
         if not matching:
             return "No files found"

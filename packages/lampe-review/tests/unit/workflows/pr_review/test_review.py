@@ -3,11 +3,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lampe.cli.orchestrators.pr_review import PRReviewStart
 from lampe.core.data_models import PullRequest, Repository
 from lampe.review.workflows.pr_review.data_models import PRReviewInput, ReviewDepth
 from lampe.review.workflows.pr_review.multi_agent_pipeline import (
     MultiAgentPipelineWorkflow,
+    PRReviewStart,
     generate_multi_agent_pr_review,
 )
 
@@ -70,9 +70,14 @@ async def test_pr_review_workflow_run(mocker, mock_llm_response, sample_reposito
                 )
             )
         )
-        assert result.reviews[0]["file_path"] == "src/example.py"
-        assert result.reviews[0]["line_comments"]["15"] == "Consider adding null check here"
-        assert result.reviews[0]["summary"] == "Overall good implementation, minor improvements suggested"
+        # result.output is list[AgentReviewOutput], each has reviews list[FileReview]
+        assert len(result.output) > 0
+        first_agent_output = result.output[0]
+        assert len(first_agent_output.reviews) > 0
+        first_review = first_agent_output.reviews[0]
+        assert first_review.file_path == "src/example.py"
+        assert first_review.line_comments.get("15") == "Consider adding null check here"
+        assert first_review.summary == "Overall good implementation, minor improvements suggested"
         assert mock_achat.call_count == 1
 
 
@@ -105,7 +110,11 @@ async def test_generate_pr_review_function(mocker, sample_repository, sample_pul
             custom_guidelines=["Focus on security issues"],
         )
 
-        assert len(result.reviews) == 1
-        assert result.reviews[0]["file_path"] == "src/example.py"
-        assert result.reviews[0]["line_comments"]["15"] == "Consider adding null check here"
-        assert result.reviews[0]["summary"] == "Good implementation"
+        # result.output is list[AgentReviewOutput], each has reviews list[FileReview]
+        assert len(result.output) > 0
+        first_agent_output = result.output[0]
+        assert len(first_agent_output.reviews) == 1
+        first_review = first_agent_output.reviews[0]
+        assert first_review.file_path == "src/example.py"
+        assert first_review.line_comments.get("15") == "Consider adding null check here"
+        assert first_review.summary == "Good implementation"

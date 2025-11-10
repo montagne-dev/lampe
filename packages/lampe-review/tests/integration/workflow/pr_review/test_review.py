@@ -69,20 +69,23 @@ async def test_integration_review_workflow(mocker, sample_repository, sample_pul
         )
 
         # Verify the result structure
-        assert len(result.reviews) == 2
+        # result.output is list[AgentReviewOutput], each has reviews list[FileReview]
+        assert len(result.output) > 0
+        first_agent_output = result.output[0]
+        assert len(first_agent_output.reviews) == 2
 
         # Check first review
-        first_review = result.reviews[0]
-        assert first_review["file_path"] == "src/example.py"
-        assert first_review["line_comments"]["15"] == "Consider adding null check here"
-        assert first_review["line_comments"]["42"] == "This could cause performance issues with large datasets"
-        assert first_review["summary"] == "Overall good implementation, minor improvements suggested"
+        first_review = first_agent_output.reviews[0]
+        assert first_review.file_path == "src/example.py"
+        assert first_review.line_comments.get("15") == "Consider adding null check here"
+        assert first_review.line_comments.get("42") == "This could cause performance issues with large datasets"
+        assert first_review.summary == "Overall good implementation, minor improvements suggested"
 
         # Check second review
-        second_review = result.reviews[1]
-        assert second_review["file_path"] == "tests/test_example.py"
-        assert second_review["line_comments"]["8"] == "Add more test cases for edge cases"
-        assert second_review["summary"] == "Good test coverage, but could be more comprehensive"
+        second_review = first_agent_output.reviews[1]
+        assert second_review.file_path == "tests/test_example.py"
+        assert second_review.line_comments.get("8") == "Add more test cases for edge cases"
+        assert second_review.summary == "Good test coverage, but could be more comprehensive"
 
 
 @pytest.mark.asyncio
@@ -112,8 +115,11 @@ async def test_different_review_depths(mocker, sample_repository, sample_pull_re
             pull_request=sample_pull_request,
             review_depth=ReviewDepth.BASIC,
         )
-        assert len(result_basic.reviews) == 1
-        assert result_basic.reviews[0]["summary"] == "Basic review completed"
+        # result.output is list[AgentReviewOutput], each has reviews list[FileReview]
+        assert len(result_basic.output) > 0
+        first_agent_output = result_basic.output[0]
+        assert len(first_agent_output.reviews) == 1
+        assert first_agent_output.reviews[0].summary == "Basic review completed"
 
         # Test standard review
         result_standard = await generate_multi_agent_pr_review(
@@ -121,7 +127,8 @@ async def test_different_review_depths(mocker, sample_repository, sample_pull_re
             pull_request=sample_pull_request,
             review_depth=ReviewDepth.STANDARD,
         )
-        assert len(result_standard.reviews) == 1
+        assert len(result_standard.output) > 0
+        assert len(result_standard.output[0].reviews) == 1
 
         # Test comprehensive review
         result_comprehensive = await generate_multi_agent_pr_review(
@@ -129,4 +136,5 @@ async def test_different_review_depths(mocker, sample_repository, sample_pull_re
             pull_request=sample_pull_request,
             review_depth=ReviewDepth.COMPREHENSIVE,
         )
-        assert len(result_comprehensive.reviews) == 1
+        assert len(result_comprehensive.output) > 0
+        assert len(result_comprehensive.output[0].reviews) == 1
