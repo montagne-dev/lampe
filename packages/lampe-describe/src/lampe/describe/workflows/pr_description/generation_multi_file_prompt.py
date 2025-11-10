@@ -62,6 +62,7 @@ Your final description MUST follow this structure (in Markdown):
 
 1. `get_diff_between_commits`
    - Use based on the files listing to examine actual code changes
+   - Use the base and head commit sha instead of HEAD/BASE
    - Example: To understand the specific changes in each file
    - Returns: Detailed diff of all changes
 
@@ -98,6 +99,7 @@ Your final description MUST follow this structure (in Markdown):
    - If `get_diff_between_commits` or `get_diff_for_files` fails:
      * the diff might be too large
      * Consider examining chunks of files individually
+     * The commit reference might be wrong, prefer commit sha
    - If file tools fail:
      * Verify file paths are correct
      * Try alternative paths or patterns
@@ -112,7 +114,8 @@ Your final description MUST follow this structure (in Markdown):
    - For PRs with many files:
      * Prioritize files with significant changes and use `get_diff_for_files` to get the diff for those files
      * Use `show_commit` to understand commit history
-     * Focus on the most impactful changes first
+     * Focus on the most impactful changes first, but make sure to navigate the necessary changes to have a global view of the changes
+
 
 # Context Management
 
@@ -171,7 +174,7 @@ Your final description MUST follow this structure (in Markdown):
 
 3. Search for related code:
    ```
-   search_in_files(pattern="authenticate", relative_dir_path="src", commit_reference="HEAD")
+   search_in_files(pattern="authenticate", relative_dir_path="src", commit_reference="def456")
    ```
 
 ## Output

@@ -23,7 +23,7 @@ fi
 # Install Lampe CLI if not already available
 if ! command -v lampe &> /dev/null; then
     echo "Lampe CLI not found, installing from source..."
-    uv tool install git+https://github.com/montagne-dev/lampe.git@v0.1.0
+    uv tool install git+https://github.com/montagne-dev/lampe.git@feat/code-review-diff-by-diff
 else
     echo "Lampe CLI is already available."
 fi
@@ -60,10 +60,6 @@ add_common_arguments() {
     add_file_reinclusions
 
     # Add optional arguments if provided
-    if [ -n "$MAX_TOKENS" ]; then
-        LAMPE_ARGS+=("--max-tokens" "$MAX_TOKENS")
-    fi
-
     if [ -n "$TIMEOUT_SECONDS" ]; then
         LAMPE_ARGS+=("--timeout-seconds" "$TIMEOUT_SECONDS")
     fi
@@ -81,6 +77,9 @@ case "$COMMAND" in
     "describe")
         LAMPE_ARGS+=("describe")
         add_common_arguments
+        if [ -n "$MAX_TOKENS" ]; then
+            LAMPE_ARGS+=("--max-tokens" "$MAX_TOKENS")
+        fi
         ;;
 
     "review")

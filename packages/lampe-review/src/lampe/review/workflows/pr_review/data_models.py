@@ -1,0 +1,97 @@
+from enum import Enum
+from typing import Any, Optional
+
+from pydantic import BaseModel, Field
+
+from lampe.core.data_models import PullRequest, Repository
+from lampe.core.workflows.function_calling_agent import ToolSource
+
+
+class AgentResponseModel(BaseModel):
+    """Pydantic model for agent JSON response parsing."""
+
+    reviews: list[dict[str, Any]] = Field(..., description="list of file reviews")
+    summary: str = Field(default="", description="Overall summary from the agent")
+
+
+class ReviewDepth(str, Enum):
+    """Review depth levels for PR reviews."""
+
+    BASIC = "basic"
+    STANDARD = "standard"
+    COMPREHENSIVE = "comprehensive"
+
+
+class ReviewType(str, Enum):
+    """Review strategy types for PR reviews."""
+
+    MULTI_AGENT = "multi-agent"
+    DIFF_BY_DIFF = "diff-by-diff"
+
+
+class ReviewComment(BaseModel):
+    """Structured comment with metadata."""
+
+    line_number: int = Field(..., description="Line number where the comment applies")
+    comment: str = Field(..., description="The review comment text")
+    severity: str = Field(..., description="Severity level: critical, high, medium, low")
+    category: str = Field(..., description="Category of the issue (e.g., security, performance, quality)")
+    agent_name: str = Field(..., description="Name of the agent that found this issue")
+
+
+class FileReview(BaseModel):
+    """Review for a specific file with inline comments."""
+
+    file_path: str = Field(..., description="Path to the reviewed file")
+    line_comments: dict[str, str] = Field(default_factory=dict, description="Line number to comment mapping")
+    structured_comments: list[ReviewComment] = Field(
+        default_factory=list, description="Structured comments with metadata"
+    )
+    summary: str = Field(..., description="Overall summary of the file review")
+    agent_name: Optional[str] = Field(default=None, description="Name of the agent that performed this review")
+
+
+class AgentReviewInput(BaseModel):
+    """Input for individual specialized agents."""
+
+    repository: Repository
+    pull_request: PullRequest
+    files_changed: str = Field(..., description="Formatted string of changed files with stats")
+    review_depth: ReviewDepth = Field(default=ReviewDepth.STANDARD, description="Depth of review analysis")
+    custom_guidelines: Optional[list[str]] = Field(default=None, description="Custom review guidelines to focus on")
+    target_file_path: Optional[str] = Field(
+        default=None, description="Specific file path to focus on (for diff-focused agents)"
+    )
+
+
+class AgentReviewOutput(BaseModel):
+    """Output from individual specialized agents."""
+
+    agent_name: str = Field(..., description="Name of the agent that performed the review")
+    focus_areas: list[str] = Field(..., description="Areas this agent focuses on")
+    reviews: list[FileReview] = Field(default_factory=list, description="File reviews from this agent")
+    sources: list[ToolSource] = Field(default_factory=list, description="Sources from this agent")
+    summary: str = Field(..., description="Overall summary from this agent")
+
+
+class PRReviewInput(BaseModel):
+    """Input for PR review generation workflow."""
+
+    repository: Repository
+    pull_request: PullRequest
+    review_depth: ReviewDepth = Field(default=ReviewDepth.STANDARD, description="Depth of review analysis")
+    custom_guidelines: Optional[list[str]] = Field(default=None, description="Custom review guidelines to focus on")
+    files_exclude_patterns: Optional[list[str]] = Field(
+        default=None, description="File patterns to exclude from review"
+    )
+    files_include_patterns: Optional[list[str]] = Field(default=None, description="File patterns to include in review")
+    files_reinclude_patterns: Optional[list[str]] = Field(
+        default=None, description="File patterns to reinclude after exclusion"
+    )
+    use_multi_agent: bool = Field(default=True, description="Whether to use multi-agent pipeline or single agent")
+
+
+class PRReivewAggregatorOutput(BaseModel):
+    """Output model for PR review aggregation."""
+
+    reviews: list[FileReview] = Field(..., description="List of file reviews")

@@ -1,5 +1,11 @@
 from lampe.core.tools.repository.content import get_file_content_at_commit
-from lampe.core.tools.repository.diff import get_diff_between_commits, get_diff_for_files, list_changed_files
+from lampe.core.tools.repository.diff import (
+    FileDiffInfo,
+    get_diff_between_commits,
+    get_diff_for_files,
+    list_changed_files,
+    list_changed_files_as_objects,
+)
 from lampe.core.tools.repository.exceptions import (
     DiffLineRangeNotFoundError,
     GitFileNotFoundError,
@@ -25,6 +31,8 @@ __all__ = [
     "get_diff_between_commits",
     "get_diff_for_files",
     "list_changed_files",
+    "list_changed_files_as_objects",
+    "FileDiffInfo",
     "show_commit",
     "find_files_by_pattern",
     "search_in_files",

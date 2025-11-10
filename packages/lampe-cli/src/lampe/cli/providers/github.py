@@ -5,7 +5,7 @@ import os
 
 from github import Auth, Github, GithubIntegration
 
-from lampe.cli.providers.base import PRDescriptionPayload, Provider, update_or_add_text_between_tags
+from lampe.cli.providers.base import PRDescriptionPayload, Provider, PRReviewPayload, update_or_add_text_between_tags
 from lampe.core.data_models.pull_request import PullRequest
 from lampe.core.data_models.repository import Repository
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
@@ -143,3 +143,56 @@ class GitHubProvider(Provider):
             # Fallback to console output
             logger.info("Description:")
             logger.info(payload.description)
+
+    def deliver_pr_review(self, payload: PRReviewPayload) -> None:
+        """Post PR review comments on GitHub."""
+        if self.pull_request.number == 0:
+            raise ValueError("Cannot post GitHub PR review for local run")
+
+        try:
+            repo = self.github_client.get_repo(f"{self.owner}/{self.repo_name}")
+            pull_request = repo.get_pull(self.pull_request.number)
+
+            # Post review comments for each agent review
+            for agent_review in payload.reviews:
+                # Post agent summary comment
+                if agent_review.summary:
+                    try:
+                        pull_request.create_issue_comment(
+                            f"## {agent_review.agent_name}\n\n"
+                            f"**Focus Areas:** {', '.join(agent_review.focus_areas)}\n\n"
+                            f"{agent_review.summary}"
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to post agent summary for {agent_review.agent_name}: {e}")
+
+                # Post file-specific comments
+                for file_review in agent_review.reviews:
+                    if file_review.line_comments:
+                        # Create review comments for specific lines
+                        for line, comment in file_review.line_comments.items():
+                            try:
+                                # Post a review comment
+                                pull_request.create_review_comment(
+                                    body=f"## 🔦🐛\n{comment}",
+                                    commit=pull_request.head.sha,
+                                    path=file_review.file_path,
+                                    line=int(line),
+                                )
+                            except Exception as e:
+                                logger.warning(f"Failed to post comment for {file_review.file_path}:{line}: {e}")
+                                # Fallback: post as general comment
+                                pull_request.create_issue_comment(
+                                    f"**{file_review.file_path} (Line {line}):** {comment}"
+                                )
+
+                    # Post summary comment if no line comments
+                    if not file_review.line_comments and file_review.summary:
+                        pull_request.create_issue_comment(f"**{file_review.file_path}:** {file_review.summary}")
+
+            logger.info(f"✅ Successfully posted PR #{self.pull_request.number} review comments on GitHub")
+        except Exception as e:
+            logger.info(f"❌ Failed to post GitHub PR review: {e}")
+            # Fallback to console output
+            logger.info("Review:")
+            logger.info(payload.review_markdown)

@@ -12,6 +12,7 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "lampe-template",
     "lampe-describe",
+    "lampe-review",
     "lampe-cli",
     "cdifflib>=1.2.9",
     "gitpython>=3.1.45",
@@ -37,6 +38,7 @@ dev = [
 [tool.uv.sources]
 lampe-template = { workspace = true }
 lampe-describe = { workspace = true }
+lampe-review = { workspace = true }
 lampe-cli = { workspace = true }
 
 [tool.uv.workspace]
@@ -46,7 +48,7 @@ members = ["packages/*"]
 core = "lampe.core:main"
 template = "lampe.template:main"
 lampe = "lampe.cli.entrypoint:main"
-
+generate_pr_review = "lampe.review.workflows.pr_review.multi_agent_pipeline:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lampe"]
@@ -61,7 +63,7 @@ repository = "https://github.com/montagne-dev/lampe"
 
 [tool.ruff]
 line-length = 120
-exclude = ["*.ipynb"]
+exclude = ["*.ipynb", "*_prompt.py"]
 
 lint.select = ["E", "F", "I", "W", "B006"]
 lint.ignore = ["E203", "W293"]

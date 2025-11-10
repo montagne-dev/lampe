@@ -1,0 +1,17 @@
+{
+  "repository": {
+    "url": "https://github.com/montagne-dev/lampe",
+    "local_path": "/tmp/test-repo"
+  },
+  "pull_request": {
+    "number": 2,
+    "title": "feat: implement support for bitbucket",
+    "body": "This PR implements support for bitbucket repositories.",
+    "base_commit_hash": "50c21d782038e2de71469df0bd5a2d5aee2f7f23",
+    "base_branch_name": "main",
+    "head_commit_hash": "2806e5e40091a73a9e5c20c7b52c2b9b6a3cb292",
+    "head_branch_name": "feat/bitbucket-implementation"
+  },
+  "review_depth": "standard",
+  "custom_guidelines": ["Write all your comment as a pirate"]
+}
