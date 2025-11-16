@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.3.0 (2025-11-16)
+### Features
+
+* ([`3715f80`](https://github.com/montagne-dev/lampe/commit/3715f80843a972e4062e39134e0a2260ab9fadf5))
+
+> Add PR review workflows### Unknown
+
+* Create LICENSE ([`ffe25ca`](https://github.com/montagne-dev/lampe/commit/ffe25ca6c7b590736111d58f5dbecffe2ef08993))
 ## v0.2.0 (2025-11-03)
 ### Features
 
