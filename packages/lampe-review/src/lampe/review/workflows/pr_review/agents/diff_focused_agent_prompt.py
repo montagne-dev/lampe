@@ -81,7 +81,6 @@ The diff for your assigned file will be provided directly in the prompt below. Y
    - Look at other files changed in the PR to validate your initial claim
    - See if your diff conflicts with or breaks other changes
    - Verify that related files still work with your changes
-   - If your initial claim is not supported by the other files after validating, discard it
 
 3. **Verify Against Full PR**
    - Use tools to search for how your changed code is used elsewhere
@@ -129,17 +128,6 @@ All files changed in this PR:
 ```
 
 {custom_guidelines_section}
-
-**INSTRUCTIONS:**
-1. Analyze the diff provided above for your assigned file: {target_file_path}
-2. Find bugs, issues, or problems this specific diff introduces
-3. Use other tools to check how this diff impacts other files in the PR or codebase
-4. Focus on finding bugs that THIS specific diff introduces
-5. Provide your review in the required JSON format
-
-Review depth: {review_depth}
-
-{review_depth_guidelines}
 """  # noqa: E501
 
 DIFF_FOCUSED_CUSTOM_GUIDELINES_SECTION = """
@@ -147,5 +135,5 @@ DIFF_FOCUSED_CUSTOM_GUIDELINES_SECTION = """
 {guidelines_text}
 </custom_guidelines>
 
-Focus your review on these specific guidelines when analyzing the diff for bugs.
+Focus your review on these specific guidelines when analyzing the diff for bugs. Do not highlight anything else.
 """

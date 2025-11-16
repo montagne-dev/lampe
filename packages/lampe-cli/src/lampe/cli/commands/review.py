@@ -33,7 +33,13 @@ def review(
     timeout: int | None = typer.Option(None, "--timeout-seconds"),
     verbose: bool = typer.Option(False, "--verbose/--no-verbose"),
 ):
-    """Generate a PR code review and deliver it to the specified output provider."""
+    """Generate a PR code review and deliver it to the specified output provider.
+
+    Model selection is automatic based on review_depth:
+    - basic: gpt-5-nano
+    - standard: gpt-5
+    - comprehensive: gpt-5.1
+    """
     initialize()
     repo_model = Repository(local_path=str(repo), full_name=repo_full_name)
     pr_model = PullRequest(

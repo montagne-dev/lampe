@@ -52,7 +52,7 @@ class LLMAggregationWorkflow(Workflow):
         super().__init__(*args, timeout=timeout, verbose=verbose, **kwargs)
         self.verbose = verbose
         self.logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
-        self.llm = LiteLLM(model=MODELS.GPT_5_NANO_2025_08_07, temperature=1.0, reasoning_effort="low")
+        self.llm = LiteLLM(model=MODELS.GPT_5_2025_08_07, temperature=0.1, reasoning_effort="high")
 
     @step
     async def aggregate_reviews(self, ctx: Context, ev: LLMAggregationStartEvent) -> LLMAggregationCompleteEvent:

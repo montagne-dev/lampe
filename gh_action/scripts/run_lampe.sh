@@ -12,6 +12,7 @@ echo "Base ref: $BASE_REF"
 echo "Head ref: $HEAD_REF"
 echo "Output: $OUTPUT"
 echo "Variant: $VARIANT"
+echo "Review Depth: ${REVIEW_DEPTH:-standard} (Model: basic=gpt-5-nano, standard=gpt-5, comprehensive=gpt-5.1)"
 
 # Install uv if not already installed
 if ! command -v uv &> /dev/null; then
@@ -54,6 +55,11 @@ add_common_arguments() {
     LAMPE_ARGS+=("--head" "$HEAD_REF")
     LAMPE_ARGS+=("--output" "$OUTPUT")
     LAMPE_ARGS+=("--variant" "$VARIANT")
+
+    # Add review depth if provided (defaults to standard in CLI)
+    if [ -n "$REVIEW_DEPTH" ]; then
+        LAMPE_ARGS+=("--review-depth" "$REVIEW_DEPTH")
+    fi
 
     # Add file filtering arguments
     add_file_exclusions

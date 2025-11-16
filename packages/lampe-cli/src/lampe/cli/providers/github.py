@@ -196,3 +196,32 @@ class GitHubProvider(Provider):
             # Fallback to console output
             logger.info("Review:")
             logger.info(payload.review_markdown)
+
+    def has_reviewed(self) -> bool:
+        """Check if the token user has already reviewed this PR."""
+        if self.pull_request.number == 0:
+            return False
+
+        try:
+            repo = self.github_client.get_repo(f"{self.owner}/{self.repo_name}")
+            pull_request = repo.get_pull(self.pull_request.number)
+
+            # Get the authenticated user
+            authenticated_user = self.github_client.get_user()
+
+            # Check issue comments (where reviews are posted)
+            comments = pull_request.get_issue_comments()
+            for comment in comments:
+                if comment.user.login == authenticated_user.login:
+                    return True
+
+            # Also check review comments (inline comments)
+            review_comments = pull_request.get_review_comments()
+            for comment in review_comments:
+                if comment.user.login == authenticated_user.login:
+                    return True
+
+            return False
+        except Exception as e:
+            logger.warning(f"Failed to check if PR has been reviewed: {e}")
+            return False
