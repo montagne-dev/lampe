@@ -6,6 +6,7 @@ import typer
 
 from lampe.cli.commands.describe import describe
 from lampe.cli.commands.healthcheck import healthcheck
+from lampe.cli.commands.review import review
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
 
 logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
@@ -26,6 +27,7 @@ def version() -> None:
 def main():
     app.command("describe")(describe)
     app.command("healthcheck")(healthcheck)
+    app.command("review")(review)
     app()
 
 

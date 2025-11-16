@@ -8,7 +8,7 @@ Provides detailed statistics for each modified file.
 - Change type (M=Modified, A=Added, D=Deleted)
 
 Parameters:
-- base_reference (string): The base branch or commit to compare against (e.g., 'main', 'origin/main', or a commit SHA).
+- base_reference (string): The base branch or commit to compare against (e.g., a commit SHA provided by the user).
 
 Returns:
 - A newline-separated list of relative file paths with their statistics, that have changed between the current state and the base reference:
@@ -24,8 +24,9 @@ GIT_DIFF_DESCRIPTION = """
 Returns the unified diff (line-by-line code changes) between the current branch (or commit) and a specified base reference. Can return either a full diff or diffs for specific files.
 
 Parameters:
-- base_reference (string): The base branch or commit to compare against.
+- base_reference (string): The base branch or commit to compare against (e.g., a commit SHA provided by the user).
 - file_paths (list[string], optional): List of specific file paths to get diffs for. If not provided, returns diff for all changed files.
+
 
 Returns:
 - A single string containing the unified diff for the specified files or all changed files.
@@ -35,21 +36,6 @@ Behavioral guidance:
 - If the diff is too large or unclear, consider requesting file contents or smaller diffs for specific files.
 """  # noqa: E501
 
-
-GIT_DIFF_DESCRIPTION = """
-Returns the unified diff (line-by-line code changes) between the current branch (or commit) and a specified base reference. Can return either a full diff or diffs for specific files.
-
-Parameters:
-- base_reference (string): The base branch or commit to compare against.
-- file_paths (list[string], optional): List of specific file paths to get diffs for. If not provided, returns diff for all changed files.
-
-Returns:
-- A single string containing the unified diff for the specified files or all changed files.
-
-Behavioral guidance:
-- For large PRs, use file_paths parameter to get diffs for specific files to avoid context window limitations.
-- If the diff is too large or unclear, consider requesting file contents or smaller diffs for specific files.
-"""  # noqa: E501
 
 SHOW_COMMIT_DESCRIPTION = """
 Shows detailed information and code changes for a specific commit in a git repository.
@@ -57,7 +43,7 @@ Shows detailed information and code changes for a specific commit in a git repos
 Use this tool to inspect the content, metadata, and diff introduced by a single commit. Helpful for understanding the context and impact of individual commits.
 
 Parameters:
-- commit_reference (string): The commit SHA or reference to show.
+- commit_reference (string): The commit SHA or reference to show (e.g., a commit SHA provided by the user).
 
 Returns:
 - Commit metadata (SHA, author, date, message, stats) and the full diff for that commit.
@@ -74,7 +60,7 @@ Retrieves the content of a specific file from a given commit reference in a git 
 Use this tool to access the raw content of a file as it existed at a specific point in the repository's history. Useful for comparing file states across different commits or examining historical versions.
 
 Parameters:
-- commit_reference (string): The commit reference (e.g., 'main', 'HEAD', commit SHA).
+- commit_reference (string): The commit reference (e.g., a commit SHA provided by the user).
 - file_path (string): Path to the file within the repository (relative to repository root).
 
 Returns:
@@ -93,7 +79,8 @@ Use this tool to find occurrences of text patterns across files in a repository 
 Parameters:
 - pattern (string): The pattern to search for in files.
 - relative_dir_path (string): Directory path to search within (relative to repository root).
-- commit (string): The commit reference to search at.
+- commit (string): The commit reference to search at (e.g., a commit SHA provided by the user).
+- include_line_numbers (bool, optional): Whether to include line numbers in search results. Defaults to False.
 
 Returns:
 - Search results as a formatted string showing matching lines with line numbers. Returns "No matches found" if no matches exist.

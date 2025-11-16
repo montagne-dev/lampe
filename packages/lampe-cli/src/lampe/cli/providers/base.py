@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from lampe.core.data_models import PullRequest, Repository
+from lampe.review.workflows.pr_review.data_models import AgentReviewOutput
 
 
 @dataclass
@@ -16,6 +17,49 @@ class PRDescriptionPayload:
     @property
     def description_with_title(self) -> str:
         return f"## 🔦 description\n{self.description}"
+
+
+@dataclass
+class PRReviewPayload:
+    reviews: list[AgentReviewOutput]  # List of agent review outputs
+
+    @property
+    def review_markdown(self) -> str:
+        review_text = "## 🔍 Code Review\n\n"
+        for agent_review in self.reviews:
+            review_text += f"### {agent_review.agent_name}\n\n"
+            review_text += f"**Focus Areas:** {', '.join(agent_review.focus_areas)}\n\n"
+
+            if agent_review.summary:
+                review_text += f"**Agent Summary:** {agent_review.summary}\n\n"
+
+            for file_review in agent_review.reviews:
+                review_text += f"#### {file_review.file_path}\n"
+                review_text += f"**Summary:** {file_review.summary}\n\n"
+
+                if file_review.line_comments:
+                    review_text += "**Line Comments:**\n"
+                    for line, comment in file_review.line_comments.items():
+                        review_text += f"- Line {line}: {comment}\n"
+                    review_text += "\n"
+
+                if file_review.structured_comments:
+                    review_text += "**Structured Comments:**\n"
+                    for comment in file_review.structured_comments:
+                        review_text += f"- Line {comment.line_number} ({comment.severity}): {comment.comment}\n"
+                    review_text += "\n"
+
+            if agent_review.sources:
+                review_text += "**Sources:**\n"
+                for source in agent_review.sources:
+                    if isinstance(source.tool_output, str):
+                        review_text += f"- **{source.tool_name}**: {source.tool_output}\n"
+                    else:
+                        review_text += f"- **{source.tool_name}**: {source.tool_output.content}\n"
+                review_text += "\n"
+
+            review_text += "---\n\n"
+        return review_text
 
 
 class ProviderType(StrEnum):
@@ -38,6 +82,11 @@ class Provider(ABC):
     @abstractmethod
     def deliver_pr_description(self, payload: PRDescriptionPayload) -> None:
         """Deliver a PR description to the configured destination."""
+        ...
+
+    @abstractmethod
+    def deliver_pr_review(self, payload: PRReviewPayload) -> None:
+        """Deliver a PR review to the configured destination."""
         ...
 
     @abstractmethod

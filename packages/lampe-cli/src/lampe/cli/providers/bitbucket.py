@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 
 import requests
 
-from lampe.cli.providers.base import PRDescriptionPayload, Provider, update_or_add_text_between_tags
+from lampe.cli.providers.base import PRDescriptionPayload, Provider, PRReviewPayload, update_or_add_text_between_tags
 from lampe.core.data_models.pull_request import PullRequest
 from lampe.core.data_models.repository import Repository
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
@@ -195,3 +196,89 @@ class BitbucketProvider(Provider):
             # Fallback to console output
             logger.info("Description:")
             logger.info(payload.description)
+
+    def deliver_pr_review(self, payload: PRReviewPayload) -> None:
+        """Post PR review comments on Bitbucket."""
+        if self.pull_request.number == 0:
+            raise ValueError("Cannot post Bitbucket PR review for local run")
+
+        try:
+            # Post review comments for each agent review
+            for agent_review in payload.reviews:
+                # Post agent summary comment
+                if agent_review.summary:
+                    try:
+                        comment_url = (
+                            f"{self.base_url}/2.0/repositories/{self.workspace}/"
+                            f"{self.repo_slug}/pullrequests/{self.pull_request.number}/comments"
+                        )
+                        comment_data = {
+                            "content": {
+                                "raw": f"## {agent_review.agent_name}\n\n"
+                                f"**Focus Areas:** {', '.join(agent_review.focus_areas)}\n\n"
+                                f"{agent_review.summary}"
+                            }
+                        }
+                        response = requests.post(comment_url, json=comment_data, headers=self.auth_headers)
+                        response.raise_for_status()
+                    except Exception as e:
+                        logger.warning(f"Failed to post agent summary for {agent_review.agent_name}: {e}")
+
+                # Post file-specific comments
+                for file_review in agent_review.reviews:
+                    if file_review.line_comments:
+                        # Create review comments for specific lines
+                        for line, comment in file_review.line_comments.items():
+                            try:
+                                line_number = int(line)
+                            except ValueError:
+                                match = re.match(r"\D*(\d+)", str(line))
+                                if match:
+                                    line_number = int(match.group(1))
+                                else:
+                                    line_number = 0
+                            try:
+                                # Post a comment on the PR
+                                comment_url = (
+                                    f"{self.base_url}/2.0/repositories/{self.workspace}/"
+                                    f"{self.repo_slug}/pullrequests/{self.pull_request.number}/comments"
+                                )
+                                comment_data = {
+                                    "content": {"raw": f"## 🔦🐛\n{comment}"},
+                                    "inline": {
+                                        "from": line_number - 1 if line_number != 0 else 0,
+                                        "to": line_number,
+                                        "start_from": line_number - 1 if line_number != 0 else 0,
+                                        "start_to": line_number,
+                                        "path": file_review.file_path,
+                                    },
+                                }
+                                response = requests.post(comment_url, json=comment_data, headers=self.auth_headers)
+                                response.raise_for_status()
+                            except Exception as e:
+                                logger.warning(f"Failed to post comment for {file_review.file_path}:{line}: {e}")
+
+                    # Post file summary comment if no line comments
+                    if not file_review.line_comments and file_review.summary:
+                        try:
+                            comment_url = (
+                                f"{self.base_url}/2.0/repositories/{self.workspace}/"
+                                f"{self.repo_slug}/pullrequests/{self.pull_request.number}/comments"
+                            )
+                            comment_data = {"content": {"raw": f"**{file_review.file_path}:** {file_review.summary}"}}
+                            response = requests.post(comment_url, json=comment_data, headers=self.auth_headers)
+                            response.raise_for_status()
+                        except Exception as e:
+                            logger.warning(f"Failed to post summary for {file_review.file_path}: {e}")
+
+            logger.info(f"✅ Successfully posted PR #{self.pull_request.number} review comments on Bitbucket")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"❌ Failed to post Bitbucket PR review: {e}")
+            # Fallback to console output
+            logger.info("Review:")
+            logger.info(payload.review_markdown)
+        except Exception as e:
+            logger.error(f"❌ Unexpected error posting Bitbucket PR review: {e}")
+            # Fallback to console output
+            logger.info("Review:")
+            logger.info(payload.review_markdown)
