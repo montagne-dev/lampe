@@ -1,7 +1,7 @@
 """Diff-focused agent that reviews one specific diff at a time to find bugs."""
 
+from llama_index.core.workflow import Context, step
 from llama_index.llms.litellm import LiteLLM
-from workflows import Context, step
 
 from lampe.core.llmconfig import MODELS
 from lampe.core.tools.repository.diff import get_diff_for_files

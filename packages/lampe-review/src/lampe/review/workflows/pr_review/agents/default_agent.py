@@ -1,6 +1,6 @@
 """Design pattern and architectural consistency agent."""
 
-from workflows import Context, step
+from llama_index.core.workflow import Context, step
 
 from lampe.core.workflows.function_calling_agent import UserInputEvent
 from lampe.review.workflows.pr_review.agents.default_agent_prompt import (
