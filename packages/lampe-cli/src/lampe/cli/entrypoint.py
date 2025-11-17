@@ -4,6 +4,7 @@ import logging
 
 import typer
 
+from lampe.cli.commands.check_reviewed import check_reviewed
 from lampe.cli.commands.describe import describe
 from lampe.cli.commands.healthcheck import healthcheck
 from lampe.cli.commands.review import review
@@ -25,6 +26,7 @@ def version() -> None:
 
 
 def main():
+    app.command("check-reviewed")(check_reviewed)
     app.command("describe")(describe)
     app.command("healthcheck")(healthcheck)
     app.command("review")(review)
