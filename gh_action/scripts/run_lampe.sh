@@ -56,10 +56,6 @@ add_common_arguments() {
     LAMPE_ARGS+=("--output" "$OUTPUT")
     LAMPE_ARGS+=("--variant" "$VARIANT")
 
-    # Add review depth if provided (defaults to standard in CLI)
-    if [ -n "$REVIEW_DEPTH" ]; then
-        LAMPE_ARGS+=("--review-depth" "$REVIEW_DEPTH")
-    fi
 
     # Add file filtering arguments
     add_file_exclusions
@@ -91,6 +87,9 @@ case "$COMMAND" in
     "review")
         LAMPE_ARGS+=("review")
         add_common_arguments
+        if [ -n "$REVIEW_DEPTH" ]; then
+            LAMPE_ARGS+=("--review-depth" "$REVIEW_DEPTH")
+        fi
         ;;
 
     "healthcheck")
