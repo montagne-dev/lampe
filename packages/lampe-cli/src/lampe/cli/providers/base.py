@@ -94,6 +94,11 @@ class Provider(ABC):
         """Check if the provider is healthy and can connect to the service."""
         ...
 
+    @abstractmethod
+    def has_reviewed(self) -> bool:
+        """Check if the token user has already reviewed this PR."""
+        ...
+
     @staticmethod
     def detect_provider_type() -> ProviderType:
         """Detect the appropriate provider type based on available environment variables."""

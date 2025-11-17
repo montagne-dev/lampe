@@ -111,8 +111,20 @@ Performs code review analysis on the pull request.
 
 - Identifies potential issues and improvements
 - Provides actionable feedback
-- Supports different review styles
+- Supports different review styles and depths
+- Automatic model selection based on review depth
 - Integrates with GitHub's review system
+
+**Review Depth Options:**
+
+- **`basic`**: Uses `gpt-5-nano` for faster, lighter reviews
+- **`standard`**: Uses `gpt-5` for balanced reviews (default)
+- **`comprehensive`**: Uses `gpt-5.1` for thorough, detailed reviews
+
+**Review Variants:**
+
+- **`multi-agent`**: Uses specialized agents for different aspects (default)
+- **`diff-by-diff`**: Reviews each file change in parallel
 
 ### `healthcheck`
 
@@ -129,21 +141,22 @@ Verifies that the Lampe SDK is properly configured and can connect to required s
 
 ### Input Parameters
 
-| Input             | Description                                                          | Required | Default                  |
-| ----------------- | -------------------------------------------------------------------- | -------- | ------------------------ |
-| `command`         | The Lampe CLI command to run (`describe`, `review`, `healthcheck`)   | Yes      | `describe`               |
-| `repo`            | Repository path                                                      | No       | `.`                      |
-| `title`           | PR title (for local runs)                                            | No       | `Pull Request`           |
-| `base_ref`        | Base ref for comparison                                              | No       | `${{ github.base_ref }}` |
-| `head_ref`        | Head ref for comparison                                              | No       | `${{ github.head_ref }}` |
-| `output`          | Output provider (`auto`, `console`, `github`, `gitlab`, `bitbucket`) | No       | `auto`                   |
-| `variant`         | Generation variant (`default`, `agentic`)                            | No       | `default`                |
-| `files_exclude`   | Comma-separated list of file patterns to exclude                     | No       | -                        |
-| `files_reinclude` | Comma-separated list of file patterns to reinclude                   | No       | -                        |
-| `max_tokens`      | Maximum tokens for truncation                                        | No       | `8000`                   |
-| `timeout_seconds` | Timeout in seconds                                                   | No       | -                        |
-| `verbose`         | Enable verbose output                                                | No       | `false`                  |
-| `deepen_length`   | Git fetch deepen length for merge-base                               | No       | `10`                     |
+| Input             | Description                                                                                                                         | Required | Default                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------- |
+| `command`         | The Lampe CLI command to run (`describe`, `review`, `healthcheck`)                                                                  | Yes      | `describe`                                     |
+| `repo`            | Repository path                                                                                                                     | No       | `.`                                            |
+| `title`           | PR title (for local runs)                                                                                                           | No       | `Pull Request`                                 |
+| `base_ref`        | Base ref for comparison                                                                                                             | No       | `${{ github.base_ref }}`                       |
+| `head_ref`        | Head ref for comparison                                                                                                             | No       | `${{ github.head_ref }}`                       |
+| `output`          | Output provider (`auto`, `console`, `github`, `gitlab`, `bitbucket`)                                                                | No       | `auto`                                         |
+| `variant`         | Generation variant (`default`, `agentic`) or review variant (`multi-agent`, `diff-by-diff`)                                         | No       | `default` (describe) or `multi-agent` (review) |
+| `review_depth`    | Review depth level (`basic`, `standard`, `comprehensive`). Model selection: basic=gpt-5-nano, standard=gpt-5, comprehensive=gpt-5.1 | No       | `standard`                                     |
+| `files_exclude`   | Comma-separated list of file patterns to exclude                                                                                    | No       | -                                              |
+| `files_reinclude` | Comma-separated list of file patterns to reinclude                                                                                  | No       | -                                              |
+| `max_tokens`      | Maximum tokens for truncation                                                                                                       | No       | `8000`                                         |
+| `timeout_seconds` | Timeout in seconds                                                                                                                  | No       | -                                              |
+| `verbose`         | Enable verbose output                                                                                                               | No       | `false`                                        |
+| `deepen_length`   | Git fetch deepen length for merge-base                                                                                              | No       | `10`                                           |
 
 ### Environment Variables
 
@@ -224,7 +237,8 @@ jobs:
         uses: montagne-dev/lampe@main
         with:
           command: review
-          variant: agentic
+          variant: diff-by-diff
+          review_depth: comprehensive
           output: github
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -263,6 +277,8 @@ jobs:
 
 ### Review Command
 
+**Basic review (standard depth):**
+
 ```yaml
 name: Review PR
 on:
@@ -278,7 +294,58 @@ jobs:
       - uses: montagne-dev/lampe@main
         with:
           command: review
-          variant: agentic
+          variant: multi-agent
+          review_depth: standard
+          output: github
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+**Comprehensive review with diff-by-diff variant:**
+
+```yaml
+name: Comprehensive Review
+on:
+  pull_request:
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: montagne-dev/lampe@main
+        with:
+          command: review
+          variant: diff-by-diff
+          review_depth: comprehensive
+          output: github
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+**Quick review (basic depth):**
+
+```yaml
+name: Quick Review
+on:
+  pull_request:
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: montagne-dev/lampe@main
+        with:
+          command: review
+          variant: diff-by-diff
+          review_depth: basic
           output: github
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

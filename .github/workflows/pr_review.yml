@@ -2,7 +2,6 @@ name: review pull request
 
 on:
   pull_request:
-    types: [opened]
 
 jobs:
   review:
@@ -20,4 +19,5 @@ jobs:
         with:
           command: review
           variant: diff-by-diff
+          review_depth: comprehensive
           files_exclude: "uv.lock"

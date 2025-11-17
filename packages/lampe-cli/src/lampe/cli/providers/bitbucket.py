@@ -282,3 +282,74 @@ class BitbucketProvider(Provider):
             # Fallback to console output
             logger.info("Review:")
             logger.info(payload.review_markdown)
+
+    def has_reviewed(self) -> bool:
+        """Check if the token user has already reviewed this PR."""
+        if self.pull_request.number == 0:
+            return False
+
+        try:
+            # Get PR comments
+            comments_url = (
+                f"{self.base_url}/2.0/repositories/{self.workspace}/"
+                f"{self.repo_slug}/pullrequests/{self.pull_request.number}/comments"
+            )
+            comments_response = requests.get(comments_url, headers=self.auth_headers)
+            comments_response.raise_for_status()
+            comments_data = comments_response.json()
+
+            # Try to get the current authenticated user (token owner)
+            # This works for user tokens but may fail for repository/workspace tokens
+            token_user_uuid = None
+            token_username = None
+            try:
+                user_info_response = requests.get(f"{self.base_url}/2.0/user", headers=self.auth_headers)
+                user_info_response.raise_for_status()
+                user_info = user_info_response.json()
+                token_user_uuid = user_info.get("uuid") or user_info.get("account_id")
+                if not token_user_uuid:
+                    token_username = user_info.get("username") or user_info.get("nickname")
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 401:
+                    # Repository/workspace tokens can't access /2.0/user
+                    # Fall back to pattern-based detection
+                    logger.debug("Token doesn't have access to /2.0/user endpoint, using pattern-based detection")
+                else:
+                    raise
+
+            # Check for comments by the token user (if we have user identity)
+            if token_user_uuid or token_username:
+                for comment in comments_data.get("values", []):
+                    user = comment.get("user", {})
+                    if token_user_uuid:
+                        if user.get("uuid") == token_user_uuid or user.get("account_id") == token_user_uuid:
+                            return True
+                    elif token_username:
+                        if user.get("username") == token_username or user.get("nickname") == token_username:
+                            return True
+
+            # Fallback: Check for review comments by pattern (for repository/workspace tokens)
+            # Look for comments that match Lampe review format:
+            # - Comments starting with "## " (agent name headers)
+            # - Comments containing "Focus Areas:"
+            # - Comments containing "🔦🐛" (line comment marker)
+            review_patterns = [
+                r"^##\s+\w+",  # Agent name header (e.g., "## SecurityAgent")
+                r"\*\*Focus Areas:\*\*",  # Focus areas marker
+                r"##\s*🔦🐛",  # Line comment marker
+            ]
+
+            for comment in comments_data.get("values", []):
+                content = comment.get("content", {}).get("raw", "") or comment.get("content", {}).get("markup", "")
+                if content:
+                    for pattern in review_patterns:
+                        if re.search(pattern, content, re.IGNORECASE | re.MULTILINE):
+                            return True
+
+            return False
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Failed to check if PR has been reviewed: {e}")
+            return False
+        except Exception as e:
+            logger.warning(f"Unexpected error checking if PR has been reviewed: {e}")
+            return False
