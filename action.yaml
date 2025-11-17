@@ -80,7 +80,7 @@ runs:
         HEAD_REF: ${{ inputs.head_ref }}
         DEEPEN_LENGTH: ${{ inputs.deepen_length }}
     - name: "Install LampeSDK"
-      run: uv tool install git+https://github.com/montagne-dev/lampe.git@feat/code-review-diff-by-diff
+      run: uv tool install git+https://github.com/montagne-dev/lampe.git@feat/allow-model-update
       shell: bash
     - name: "LampeCI Healthcheck"
       run: lampe healthcheck
