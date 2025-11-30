@@ -27,3 +27,8 @@ class ConsoleProvider(Provider):
     def healthcheck(self) -> None:
         """Check if the console provider is healthy and can connect to the service."""
         logger.info("✅ Console provider is healthy")
+
+    def has_reviewed(self) -> bool:
+        """Check if the token user has already reviewed this PR."""
+        # Console provider cannot check for existing reviews
+        return False

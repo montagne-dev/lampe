@@ -12,6 +12,7 @@ echo "Base ref: $BASE_REF"
 echo "Head ref: $HEAD_REF"
 echo "Output: $OUTPUT"
 echo "Variant: $VARIANT"
+echo "Review Depth: ${REVIEW_DEPTH:-standard} (Model: basic=gpt-5-nano, standard=gpt-5, comprehensive=gpt-5.1)"
 
 # Install uv if not already installed
 if ! command -v uv &> /dev/null; then
@@ -23,7 +24,7 @@ fi
 # Install Lampe CLI if not already available
 if ! command -v lampe &> /dev/null; then
     echo "Lampe CLI not found, installing from source..."
-    uv tool install git+https://github.com/montagne-dev/lampe.git@feat/code-review-diff-by-diff
+    uv tool install git+https://github.com/montagne-dev/lampe.git@feat/allow-model-update
 else
     echo "Lampe CLI is already available."
 fi
@@ -55,6 +56,7 @@ add_common_arguments() {
     LAMPE_ARGS+=("--output" "$OUTPUT")
     LAMPE_ARGS+=("--variant" "$VARIANT")
 
+
     # Add file filtering arguments
     add_file_exclusions
     add_file_reinclusions
@@ -85,6 +87,9 @@ case "$COMMAND" in
     "review")
         LAMPE_ARGS+=("review")
         add_common_arguments
+        if [ -n "$REVIEW_DEPTH" ]; then
+            LAMPE_ARGS+=("--review-depth" "$REVIEW_DEPTH")
+        fi
         ;;
 
     "healthcheck")
