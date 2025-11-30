@@ -1,6 +1,10 @@
 # CHANGELOG
 
 
+## v0.4.0 (2025-11-30)
+### Features
+
+* feat: allow model change based on review depth and review check command (#5) ([`88b71f0`](https://github.com/montagne-dev/lampe/commit/88b71f0fde12b7401e86d4e8231baeeda19f8cfc))
 ## v0.3.0 (2025-11-16)
 ### Features
 
