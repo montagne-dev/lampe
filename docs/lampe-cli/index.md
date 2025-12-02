@@ -81,6 +81,8 @@ lampe describe \
 ## Available Commands
 
 - **`describe`**: Generate PR descriptions from git diffs
+- **`review`**: Generate comprehensive code reviews for pull requests
+- **`check-reviewed`**: Check if a PR has already been reviewed by the token user
 - **`healthcheck`**: Verify CLI installation and configuration
 
 For detailed usage instructions, see the [CLI Reference](cli.md).
