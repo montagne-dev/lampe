@@ -9,20 +9,63 @@ import logging
 import random
 from typing import Any
 
-from llama_index.core.llms import ChatMessage
-from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.tools import FunctionTool
+from llama_index.core.workflow import Context
 from llama_index.llms.litellm import LiteLLM
-from workflows import Context, Workflow, step
+from workflows import Context as WorkflowContext
+from workflows import Workflow, step
 from workflows.events import StartEvent, StopEvent
 
 from lampe.core.llmconfig import MODELS
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
+from lampe.core.workflows.function_calling_agent import (
+    FunctionCallingAgent,
+    UserInputEvent,
+)
 from lampe.review.workflows.pr_review.data_models import AgentReviewOutput, FileReview, ReviewComment
 from lampe.review.workflows.pr_review.llm_aggregation_prompt import (
     LLM_AGGREGATION_SYSTEM_PROMPT,
     LLM_AGGREGATION_USER_PROMPT,
 )
+
+
+class MuteIssueBatchStart(StartEvent):
+    """Start event for a single batch of mute-issue aggregation."""
+
+    user_prompt: str
+
+
+class MuteIssueAggregationAgent(FunctionCallingAgent):
+    """Agent that runs mute_issue tool calls and stores results in context."""
+
+    @staticmethod
+    def _create_mute_issue_tool() -> FunctionTool:
+        async def mute_issue(ctx: Context, issue_id: str) -> str:
+            """Mark an issue as muted. Call this for each issue you want to hide from the final review."""
+            muted_ids = await ctx.store.get('muted_ids', default=None)
+            if muted_ids is None:
+                muted_ids = set()
+                await ctx.store.set('muted_ids', muted_ids)
+            muted_ids.add(issue_id)
+            return f'Muted issue {issue_id}'
+
+        return FunctionTool.from_defaults(
+            async_fn=mute_issue,
+            name='mute_issue',
+            description=(
+                'Mark an issue as muted. Call with issue_id for each issue to hide '
+                '(duplicates, hallucinations, non-actionable, noisy).'
+            ),
+        )
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        tools = kwargs.pop('tools', None) or [self._create_mute_issue_tool()]
+        super().__init__(tools=tools, *args, **kwargs)
+
+    @step
+    async def setup_batch(self, ctx: WorkflowContext, ev: MuteIssueBatchStart) -> UserInputEvent:
+        """Convert batch input to user prompt for the agent."""
+        return UserInputEvent(input=ev.user_prompt)
 
 
 class LLMAggregationStartEvent(StartEvent):
@@ -77,9 +120,7 @@ def _build_issues_with_ids(batch: list[AgentReviewOutput]) -> str:
     return json.dumps(issues, indent=2)
 
 
-def _apply_muted_flags(
-    batch: list[AgentReviewOutput], muted_ids: set[str]
-) -> list[AgentReviewOutput]:
+def _apply_muted_flags(batch: list[AgentReviewOutput], muted_ids: set[str]) -> list[AgentReviewOutput]:
     """Apply muted flags to reviews based on muted issue IDs. Returns deep copies."""
     result: list[AgentReviewOutput] = []
 
@@ -154,9 +195,14 @@ class LLMAggregationWorkflow(Workflow):
         super().__init__(*args, timeout=timeout, verbose=verbose, **kwargs)
         self.verbose = verbose
         self.logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
-        self.llm = llm or LiteLLM(model=MODELS.GPT_5_2025_08_07, temperature=1, reasoning_effort='high')
+        self.llm = llm or LiteLLM(model=MODELS.GPT_5_2025_08_07, temperature=1, reasoning_effort="high")
         self.max_batch_size = max_batch_size
         self.max_tool_iterations = max_tool_iterations
+        self._agent = MuteIssueAggregationAgent(
+            system_prompt=LLM_AGGREGATION_SYSTEM_PROMPT,
+            llm=self.llm,
+            max_iterations=self.max_tool_iterations,
+        )
 
     def _group_reviews_by_directory(self, reviews: list[AgentReviewOutput]) -> list[list[AgentReviewOutput]]:
         """Group agent reviews by first folder in file paths."""
@@ -167,11 +213,11 @@ class LLMAggregationWorkflow(Workflow):
             first_folders = set()
             for file_review in review.reviews:
                 file_path = file_review.file_path
-                parts = file_path.split('/', 1)
+                parts = file_path.split("/", 1)
                 if len(parts) > 1:
                     first_folders.add(parts[0])
-                elif file_path.startswith('/'):
-                    parts = file_path.lstrip('/').split('/', 1)
+                elif file_path.startswith("/"):
+                    parts = file_path.lstrip("/").split("/", 1)
                     if len(parts) > 1:
                         first_folders.add(parts[0])
 
@@ -201,15 +247,17 @@ class LLMAggregationWorkflow(Workflow):
         return result
 
     @step
-    async def aggregate_reviews(self, ctx: Context, ev: LLMAggregationStartEvent) -> LLMAggregationCompleteEvent:
+    async def aggregate_reviews(
+        self, ctx: WorkflowContext, ev: LLMAggregationStartEvent
+    ) -> LLMAggregationCompleteEvent:
         """Aggregate and clean reviews using LLM with mute_issue tool calls."""
         if not ev.agent_reviews:
             if self.verbose:
-                self.logger.debug('No agent reviews to aggregate')
+                self.logger.debug("No agent reviews to aggregate")
             return LLMAggregationCompleteEvent(aggregated_reviews=[])
 
         if self.verbose:
-            self.logger.debug(f'Aggregating {len(ev.agent_reviews)} agent reviews via mute_issue tool...')
+            self.logger.debug(f"Aggregating {len(ev.agent_reviews)} agent reviews via mute_issue tool...")
 
         grouped_reviews = self._group_reviews_by_directory(ev.agent_reviews)
 
@@ -220,76 +268,40 @@ class LLMAggregationWorkflow(Workflow):
                 all_batches.append(batch)
 
         if self.verbose:
-            self.logger.debug(f'Processing {len(all_batches)} batches (max {self.max_batch_size} reviews per batch)')
+            self.logger.debug(f"Processing {len(all_batches)} batches (max {self.max_batch_size} reviews per batch)")
 
         aggregated_reviews: list[AgentReviewOutput] = []
         for batch_idx, batch in enumerate(all_batches):
             if self.verbose:
-                self.logger.debug(f'Processing batch {batch_idx + 1}/{len(all_batches)} with {len(batch)} reviews')
-
-            muted_ids: set[str] = set()
-
-            def mute_issue(issue_id: str) -> str:
-                """Mark an issue as muted. Call this for each issue you want to hide from the final review."""
-                return f'Muted issue {issue_id}'
-
-            tool = FunctionTool.from_defaults(
-                fn=mute_issue,
-                name='mute_issue',
-                description=(
-                    'Mark an issue as muted. Call with issue_id for each issue to hide '
-                    '(duplicates, hallucinations, non-actionable, noisy).'
-                ),
-            )
+                self.logger.debug(f"Processing batch {batch_idx + 1}/{len(all_batches)} with {len(batch)} reviews")
 
             issues_with_ids = _build_issues_with_ids(batch)
             user_prompt = LLM_AGGREGATION_USER_PROMPT.format(
                 files_changed=ev.files_changed, issues_with_ids=issues_with_ids
             )
 
-            memory = ChatMemoryBuffer.from_defaults(llm=self.llm)
-            memory.put(ChatMessage(role='system', content=LLM_AGGREGATION_SYSTEM_PROMPT))
-            memory.put(ChatMessage(role='user', content=user_prompt))
-
             try:
-                iteration = 0
-                while iteration < self.max_tool_iterations:
-                    iteration += 1
-                    chat_history = memory.get()
-                    response = await self.llm.achat_with_tools([tool], chat_history=chat_history)
-
-                    memory.put(response.message)
-                    tool_calls = self.llm.get_tool_calls_from_response(response, error_on_no_tool_call=False)
-
-                    if not tool_calls:
-                        break
-
-                    for tool_call in tool_calls:
-                        if tool_call.tool_name == 'mute_issue':
-                            issue_id = tool_call.tool_kwargs.get('issue_id', '')
-                            if issue_id:
-                                muted_ids.add(issue_id)
-                        memory.put(
-                            ChatMessage(
-                                role='tool',
-                                content='Muted',
-                                additional_kwargs={'tool_call_id': tool_call.tool_id, 'name': tool_call.tool_name},
-                            )
-                        )
+                agent_ctx = WorkflowContext(self._agent)
+                await agent_ctx.store.set("muted_ids", set())
+                await self._agent.run(
+                    start_event=MuteIssueBatchStart(user_prompt=user_prompt),
+                    ctx=agent_ctx,
+                )
+                muted_ids = await agent_ctx.store.get("muted_ids", default=set())
 
                 batch_with_muted = _apply_muted_flags(batch, muted_ids)
                 aggregated_reviews.extend(batch_with_muted)
 
                 if self.verbose:
-                    self.logger.debug(f'Batch {batch_idx + 1}: muted {len(muted_ids)} issues')
+                    self.logger.debug(f"Batch {batch_idx + 1}: muted {len(muted_ids)} issues")
 
             except Exception as e:
-                self.logger.exception(f'Failed to aggregate batch {batch_idx + 1}: {e}')
+                self.logger.exception(f"Failed to aggregate batch {batch_idx + 1}: {e}")
                 if self.verbose:
-                    self.logger.debug(f'Falling back to original reviews for batch {batch_idx + 1}')
+                    self.logger.debug(f"Falling back to original reviews for batch {batch_idx + 1}")
                 aggregated_reviews.extend(batch)
 
         if self.verbose:
-            self.logger.debug(f'Aggregation complete: {len(aggregated_reviews)} reviews with muted flags')
+            self.logger.debug(f"Aggregation complete: {len(aggregated_reviews)} reviews with muted flags")
 
         return LLMAggregationCompleteEvent(aggregated_reviews=aggregated_reviews)

@@ -41,7 +41,7 @@ class ReviewAggregator:
 
         for review in reviews:
             # Merge line comments (skip muted lines)
-            muted_lines = getattr(review, 'muted_line_numbers', set()) or set()
+            muted_lines = getattr(review, "muted_line_numbers", set()) or set()
             for line_num, comment in review.line_comments.items():
                 if line_num in muted_lines:
                     continue
@@ -53,7 +53,7 @@ class ReviewAggregator:
 
             # Collect structured comments (excluding muted)
             for comment in review.structured_comments:
-                if not getattr(comment, 'muted', False):
+                if not getattr(comment, "muted", False):
                     all_structured_comments.append(comment)
 
             # Collect summaries
