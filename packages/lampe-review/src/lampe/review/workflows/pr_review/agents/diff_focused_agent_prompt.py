@@ -38,6 +38,9 @@ The diff for your assigned file will be provided directly in the prompt below. Y
    - Use to read file contents at a specific commit
    - Example: When you need more context about a changed file
    - Returns: File contents at the specified commit
+   - **Important**: If a file is larger than 300KB, the tool will return an error message indicating the file is too large
+   - **When file is too large**: Use the `line_start` and `line_end` parameters to read specific line ranges instead of the full file
+   - Example: `get_file_content_at_commit(commit_hash="abc123", file_path="large_file.py", line_start=10, line_end=50)` to read lines 10-50
 
 ## File Tools
 1. `find_files_by_pattern`
@@ -56,6 +59,11 @@ The diff for your assigned file will be provided directly in the prompt below. Y
      * the diff might be too large
      * Consider examining chunks of files individually
      * The base_reference might be wrong, use user provided commit sha
+   - If `get_file_content_at_commit` returns "File too large" error:
+     * The file exceeds 300KB and cannot be read in full
+     * Use `line_start` and `line_end` parameters to read specific line ranges
+     * Focus on the lines mentioned in the diff or areas you need to understand
+     * Example: If the diff shows changes around line 100, read `line_start=80, line_end=120` to get context
    - If file tools fail:
      * Verify file paths are correct
      * Try alternative paths or patterns

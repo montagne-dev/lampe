@@ -8,6 +8,8 @@ from lampe.core.tools.repository.management import LocalCommitsAvailability
 
 logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
 
+MAX_FILE_SIZE_CHARS = 300_000
+
 
 def file_exists(file_path: str, commit_hash: str = "HEAD", repo_path: str = "/tmp/") -> bool:
     """Check if a file exists in a specific commit.
@@ -79,6 +81,17 @@ def get_file_content_at_commit(
         If the file doesn't exist or any other git error occurs
     """
     try:
+        # Check file size if no line range is specified
+        if line_start is None and line_end is None:
+            file_size = get_file_size_at_commit(file_path, commit_hash, repo_path)
+            if file_size > MAX_FILE_SIZE_CHARS:
+                error_msg = (
+                    f"Error: File too large (>300KB). File size: {file_size} bytes. Cannot read full file content. "
+                    "Please use line_start and line_end parameters to read specific line ranges."
+                )
+                logger.warning(f"File {file_path} at {commit_hash} is too large ({file_size} bytes)")
+                return error_msg
+
         blob = ""
         repo = Repo(path=repo_path)
         with LocalCommitsAvailability(repo_path, [commit_hash]):
