@@ -184,15 +184,17 @@ class FunctionCallingAgent(Workflow):
                     if key in tool.partial_params:
                         self.logger.info(f"Tool {tool_call.tool_name} partial param {key} value {value}")
 
+                ctx_param_name = getattr(tool, "ctx_param_name", None)
+                if getattr(tool, "requires_context", False) and ctx_param_name is not None:
+                    tool_call.tool_kwargs[ctx_param_name] = ctx
                 self.logger.info(f"-------------- {tool_call.tool_name} ------------------")
                 self.logger.info(f"kwargs {tool_call.tool_kwargs}")
-                tool_output = tool(**tool_call.tool_kwargs)
+                result = await tool.acall(**tool_call.tool_kwargs)
+                tool_output = result.content if hasattr(result, "content") else str(result)
                 self.logger.info(f"Tool output:\n {tool_output}")
                 self.logger.info("--------------------------------")
 
-                tool_msgs.append(
-                    ChatMessage(role="tool", content=tool_output.content, additional_kwargs=additional_kwargs)
-                )
+                tool_msgs.append(ChatMessage(role="tool", content=tool_output, additional_kwargs=additional_kwargs))
             except Exception as e:
                 tool_output = f"Encountered error in tool call: \n{e}"
                 tool_msgs.append(ChatMessage(role="tool", content=tool_output, additional_kwargs=additional_kwargs))
