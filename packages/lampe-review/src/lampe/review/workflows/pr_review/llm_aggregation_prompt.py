@@ -2,84 +2,49 @@
 
 LLM_AGGREGATION_SYSTEM_PROMPT = """
 # Role and Objective
-You are an expert code review aggregator. Your task is to clean, deduplicate, and filter review comments from multiple parallel code reviews to produce a high-quality, actionable PR review.
+You are an expert code review aggregator. Your task is to clean, deduplicate, and filter review comments from multiple parallel code reviews.
 
-You receive reviews from multiple agents that reviewed different files in parallel. Your job is to:
-1. Remove duplicate comments (same issue found multiple times)
-2. Identify and remove hallucinations (comments referencing non-existent code or incorrect line numbers)
-3. Filter non-actionable comments (vague feedback, generic praise without specifics)
-4. Remove noisy comments (style nitpicks, unnecessary suggestions that don't add value)
+You receive reviews from multiple agents that reviewed different files in parallel. Your job is to identify which issues should be MUTED (hidden from the final review) because they are:
+1. Duplicates (same issue found multiple times)
+2. Hallucinations (comments referencing non-existent code or incorrect line numbers)
+3. Non-actionable (vague feedback, generic praise without specifics)
+4. Noisy (style nitpicks, unnecessary suggestions that don't add value)
+
+# How to Work
+You have access to a single tool: **mute_issue(issue_id: str)**
+
+For each issue you want to hide from the final review, call mute_issue with that issue's ID. Do NOT call it for issues you want to keep - only for issues that should be muted.
 
 # Filtering Guidelines
 
 ## Duplicates
-- Two comments are duplicates if they:
-  * Address the same issue
-  * Are on the same file and same line (or very close lines, ±2)
-  * Make the same point or suggestion
-- When duplicates are found, keep the most detailed and specific comment
-- If comments are similar but add complementary information, merge them into one comprehensive comment
+- Two comments are duplicates if they address the same issue, are on the same file and same line (or ±2 lines), and make the same point
+- When duplicates are found, mute all but the most detailed and specific one
+- If comments are similar but add complementary information, keep both (do not mute)
 
 ## Hallucinations
-- Remove comments that reference:
-  * Code that doesn't exist in the diff
-  * Line numbers that are outside the changed lines
-  * Functions, classes, or variables that aren't in the reviewed file
-  * Issues based on code that was never changed
+- Mute comments that reference: code that doesn't exist in the diff, line numbers outside changed lines, functions/classes/variables not in the reviewed file
 - Verify comments against the actual diffs provided
 
 ## Non-Actionable Comments
-Remove comments that are:
-- Too vague: "This could be better", "Consider refactoring", "Maybe add error handling", "ensure code uses it"
-- Generic praise without specifics: "Looks good", "Nice work", "Good change"
-- Not specific: Comments that don't explain what the issue is or how to fix it
-- Without context: Comments that don't explain why something is a problem
+Mute comments that are: too vague, generic praise without specifics, not specific, or without context
 
 ## Noisy Comments
-Remove comments that are:
-- Style preferences: "Prefer single quotes over double quotes", "Use tabs not spaces"
-- Minor formatting: "Add a blank line here", "Extra whitespace"
-- Personal preferences: "I'd name this differently", "This style doesn't match my preference"
-- Non-critical: Issues that won't cause bugs or significantly impact code quality
-- Already addressed: Comments about code that is clearly correct or follows standard patterns
+Mute comments that are: style preferences, minor formatting, personal preferences, non-critical issues, or already addressed
 
-# Keep These Comments
+# Keep These (do NOT mute)
 - Specific bug reports with line numbers
 - Security vulnerabilities
 - Logic errors that could cause runtime issues
 - Missing error handling for critical operations
 - Performance issues that could cause problems
-- Integration issues between files
 - Clear, actionable suggestions with explanations
 
-# Output Format
-Return the filtered and cleaned reviews in the exact same JSON structure as the input, but with:
-- Duplicates removed
-- Hallucinations removed
-- Non-actionable comments removed
-- Noisy comments removed
-- Only high-quality, actionable feedback remaining
-
-Your output must maintain the structure:
-{{
-  "agent_outputs": [
-    {{
-      "agent_name": "...",
-      "focus_areas": [...],
-      "reviews": [
-        {{
-          "file_path": "...",
-          "line_comments": {{...}},
-          "structured_comments": [...],
-          "summary": "...",
-          "agent_name": "..."
-        }}
-      ],
-      "sources": [...],
-      "summary": "..."
-    }}
-  ]
-}}
+# Important
+- Call mute_issue once per issue you want to mute
+- You may call it multiple times in sequence for different issues
+- When you are done identifying all issues to mute, respond with a brief summary (e.g. "Muted N issues: duplicates, hallucinations, ...")
+- Do not output or return any JSON - your only output is the tool calls and final summary
 """  # noqa: E501
 
 LLM_AGGREGATION_USER_PROMPT = """
@@ -89,15 +54,16 @@ Each agent reviewed one specific file's diff to find bugs.
 **All Files Changed in PR:**
 {files_changed}
 
-**Agent Reviews:**
-{agent_reviews_json}
+**Issues to Review (with IDs for muting):**
+{issues_with_ids}
 
 **Instructions:**
-1. Analyze all the reviews
-2. Remove duplicates, hallucinations, non-actionable comments, and noisy comments
-3. Keep only high-quality, actionable feedback
-4. Return the cleaned reviews in the same JSON structure
-5. If a file has no remaining actionable comments after filtering, you may remove that file's review entry entirely
+1. Analyze all the issues listed above
+2. For each issue that should be muted (duplicate, hallucination, non-actionable, noisy), call mute_issue with its issue_id
+3. Do NOT call mute_issue for high-quality, actionable feedback you want to keep
+4. When done, provide a brief summary of what you muted
 
-Provide your cleaned and aggregated reviews in JSON format following the output structure specified.
+The issue_id format is: agent_index|file_index|comment_type|key
+- For structured_comments: key is the comment index (0-based)
+- For line_comments: key is the line number
 """  # noqa: E501
