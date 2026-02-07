@@ -43,3 +43,7 @@ ut: ## Run unit tests
 .PHONY: it
 it: ## Run integration tests
 	uv run pytest tests/integration packages/**/tests/integration
+
+.PHONY: lup
+lup: ## Start Langfuse observability platform
+	docker compose --env-file .env -f docker-compose.langfuse.yml up -d

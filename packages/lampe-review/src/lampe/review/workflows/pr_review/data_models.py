@@ -7,6 +7,13 @@ from lampe.core.data_models import PullRequest, Repository
 from lampe.core.workflows.function_calling_agent import ToolSource
 
 
+class LightweightToolSource(BaseModel):
+    """Lightweight version of ToolSource without tool_output for aggregation."""
+
+    tool_name: str = Field(..., description="Name of the tool that was called")
+    tool_kwargs: dict[str, Any] = Field(..., description="Arguments passed to the tool")
+
+
 class AgentResponseModel(BaseModel):
     """Pydantic model for agent JSON response parsing."""
 
@@ -72,6 +79,20 @@ class AgentReviewOutput(BaseModel):
     reviews: list[FileReview] = Field(default_factory=list, description="File reviews from this agent")
     sources: list[ToolSource] = Field(default_factory=list, description="Sources from this agent")
     summary: str = Field(..., description="Overall summary from this agent")
+
+    def to_lightweight_dict(self) -> dict[str, Any]:
+        """Convert to dictionary with lightweight sources for aggregation."""
+        lightweight_sources = [
+            LightweightToolSource(tool_name=source.tool_name, tool_kwargs=source.tool_kwargs).model_dump()
+            for source in self.sources
+        ]
+        return {
+            "agent_name": self.agent_name,
+            "focus_areas": self.focus_areas,
+            "reviews": [review.model_dump() for review in self.reviews],
+            "sources": lightweight_sources,
+            "summary": self.summary,
+        }
 
 
 class PRReviewInput(BaseModel):
