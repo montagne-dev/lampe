@@ -25,6 +25,7 @@ def test_get_file_content_success(mocker, mock_repo, mock_commits_availability):
     """Test successful file content retrieval"""
     content = "line1\nline2\nline3"
     mock_repo.git.show.return_value = content
+    mocker.patch("lampe.core.tools.repository.content.get_file_size_at_commit", return_value=100)
     mocker.patch("lampe.core.tools.repository.content.LocalCommitsAvailability", return_value=mock_commits_availability)
     mock_repo_class = mocker.patch("lampe.core.tools.repository.content.Repo", return_value=mock_repo)
     fake_path = "/tmp/fake_repo"
@@ -37,6 +38,7 @@ def test_get_file_content_success(mocker, mock_repo, mock_commits_availability):
 def test_get_file_content_path_not_found(mocker, mock_repo, mock_commits_availability):
     """Test that GitCommandError is raised when file doesn't exist"""
     mock_repo.git.show.side_effect = GitCommandError("test", stderr="fatal: path missing.py does not exist")
+    mocker.patch("lampe.core.tools.repository.content.get_file_size_at_commit", return_value=100)
     mocker.patch("lampe.core.tools.repository.content.LocalCommitsAvailability", return_value=mock_commits_availability)
     mocker.patch("lampe.core.tools.repository.content.Repo", return_value=mock_repo)
     with pytest.raises(GitCommandError):
@@ -50,6 +52,7 @@ def test_get_file_content_commit_not_found(mocker, mock_repo, mock_commits_avail
         stderr="fatal: invalid object name '81212e0574841c9dbac39aefadc8277ab5fa'.",
         status=128,
     )
+    mocker.patch("lampe.core.tools.repository.content.get_file_size_at_commit", return_value=100)
     mocker.patch("lampe.core.tools.repository.content.LocalCommitsAvailability", return_value=mock_commits_availability)
     mocker.patch("lampe.core.tools.repository.content.Repo", return_value=mock_repo)
     with pytest.raises(GitCommandError) as exc_info:
@@ -62,6 +65,7 @@ def test_get_file_content_commit_not_found(mocker, mock_repo, mock_commits_avail
 def test_get_file_content_at_commit_success(mocker, mock_commits_availability):
     """Test successful file content retrieval"""
     content = "line1\nline2\nline3"
+    mocker.patch("lampe.core.tools.repository.content.get_file_size_at_commit", return_value=100)
     mocker.patch("lampe.core.tools.repository.content.LocalCommitsAvailability", return_value=mock_commits_availability)
     mock_repo = mocker.patch("lampe.core.tools.repository.content.Repo")
     mock_repo.return_value.git_dir = "/tmp/test_repo/.git"
@@ -98,6 +102,7 @@ def test_get_file_content_at_commit_with_single_line(mocker, mock_commits_availa
 
 def test_get_file_content_at_commit_git_error(mocker, mock_commits_availability):
     """Test GitCommandError is raised on unexpected git errors"""
+    mocker.patch("lampe.core.tools.repository.content.get_file_size_at_commit", return_value=100)
     mocker.patch("lampe.core.tools.repository.content.LocalCommitsAvailability", return_value=mock_commits_availability)
     mock_repo = mocker.patch("lampe.core.tools.repository.content.Repo")
     mock_repo.return_value.git.show.side_effect = GitCommandError("show", status=1)
