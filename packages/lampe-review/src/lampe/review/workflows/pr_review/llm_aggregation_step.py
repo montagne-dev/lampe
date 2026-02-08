@@ -4,7 +4,6 @@ Uses a tool-based approach: the LLM calls mute_issue(issue_id) for each issue
 to mute. Original reviews are kept with muted flags applied.
 """
 
-import json
 import logging
 import random
 from typing import Any
@@ -26,6 +25,7 @@ from lampe.review.workflows.pr_review.data_models import AgentReviewOutput, File
 from lampe.review.workflows.pr_review.llm_aggregation_prompt import (
     LLM_AGGREGATION_SYSTEM_PROMPT,
     LLM_AGGREGATION_USER_PROMPT,
+    format_issues_as_markdown,
 )
 
 
@@ -117,7 +117,7 @@ def _build_issues_with_ids(batch: list[AgentReviewOutput]) -> str:
                     }
                 )
 
-    return json.dumps(issues, indent=2)
+    return format_issues_as_markdown(issues)
 
 
 def _apply_muted_flags(batch: list[AgentReviewOutput], muted_ids: set[str]) -> list[AgentReviewOutput]:

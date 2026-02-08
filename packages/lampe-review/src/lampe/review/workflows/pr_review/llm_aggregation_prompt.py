@@ -1,5 +1,40 @@
 """Prompt for LLM-based review aggregation step."""
 
+from typing import Any
+
+ISSUE_BLOCK_TEMPLATE = """### Issue `{issue_id}`
+- **Agent:** {agent}
+- **File:** `{file_path}`
+- **Line:** 
+    ```
+    {line}
+    ```
+- **Severity:** {severity}
+- **Category:** {category}
+- **Comment:** {comment}
+"""
+
+
+def format_issues_as_markdown(issues: list[dict[str, Any]]) -> str:
+    """Format issues as markdown for the LLM prompt instead of JSON."""
+    if not issues:
+        return '_No issues to review._'
+
+    blocks = [
+        ISSUE_BLOCK_TEMPLATE.format(
+            issue_id=issue.get('id', ''),
+            agent=issue.get('agent', ''),
+            file_path=issue.get('file', ''),
+            line=issue.get('line', ''),
+            severity=issue.get('severity', ''),
+            category=issue.get('category', ''),
+            comment=issue.get('comment', ''),
+        ).strip()
+        for issue in issues
+    ]
+    return '\n\n'.join(blocks)
+
+
 LLM_AGGREGATION_SYSTEM_PROMPT = """
 # Role and Objective
 You are an expert code review aggregator. Your task is to clean, deduplicate, and filter review comments from multiple parallel code reviews.
