@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 from lampe.core.data_models import PullRequest, Repository
 from lampe.core.workflows.function_calling_agent import ToolSource
@@ -60,6 +60,11 @@ class FileReview(BaseModel):
     muted_line_numbers: set[str] = Field(
         default_factory=set, description="Line numbers with muted comments (for line_comments)"
     )
+
+    @field_serializer("muted_line_numbers")
+    def _serialize_muted_line_numbers(self, value: set[str]) -> list[str]:
+        """Serialize set to sorted list for JSON compatibility."""
+        return sorted(value)
 
 
 class AgentReviewInput(BaseModel):

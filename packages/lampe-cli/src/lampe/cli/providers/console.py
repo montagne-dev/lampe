@@ -23,6 +23,8 @@ class ConsoleProvider(Provider):
     def deliver_pr_review(self, payload: PRReviewPayload) -> None:
         """Print the PR review to console."""
         print(payload.review_markdown)
+        open("output.json", "w").write(payload.json_payload())
+
 
     def healthcheck(self) -> None:
         """Check if the console provider is healthy and can connect to the service."""
