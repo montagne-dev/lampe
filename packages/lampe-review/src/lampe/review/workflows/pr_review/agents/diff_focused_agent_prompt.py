@@ -51,18 +51,19 @@ Report ONLY issues that are:
 - **High**: Logic errors that will cause wrong behavior in common cases; missing error handling that will fail silently
 
 Do NOT report:
-- Style, formatting, naming
-- "Consider checking...", "You might want to...", "Ensure that..."
+- Nitpicks: Style, formatting, naming
+- "Consider checking...", "You might want to...", "Ensure that...", "Cross-check...", "Verify that..."
 - Possible edge cases you did not verify
 - Performance optimizations (unless they cause real failures)
+- Risks, possibilities, or integration concerns—only concrete bugs you verified
 
 # Forbidden Output Patterns
 
-NEVER output:
-- "Consider verifying..." or "Ensure X has been done correctly"
-- "You might want to check..." or "It may be worth checking..."
-- "Potential issue..." or "Possible bug..." — either verify and report, or say nothing
-- Vague suggestions without a specific, verified problem
+Report FACTS you verified, not risks or suggestions. NEVER output:
+- "Consider verifying...", "Ensure X...", "Cross-check...", "Verify that...", "Check if..." — do the check with tools yourself, or say nothing
+- "Potential issue...", "Possible bug...", "Integration risk...", "Related risk..." — either verify and state the fact, or do not mention it
+- Hypotheticals ("If X then Y could fail") — either you confirmed the bug or you report nothing
+- Anything that asks the reader to verify something; you must verify it with tools before reporting
 
 If you suspect something: use tools to check. If tools do not confirm it: do NOT mention it.
 

@@ -62,8 +62,9 @@ For each issue you want to hide from the final review, call mute_issue with that
 Mute comments that are: too vague, generic praise without specifics, not specific, or without context
 
 Also mute:
-- Comments phrased as suggestions: "consider checking", "ensure that", "you might want to verify"
-- "Potential" or "possible" issues without evidence
+- Comments phrased as suggestions: "consider checking", "ensure that", "you might want to verify", "cross-check", "verify that"
+- "Potential", "possible", "risk", or "integration risk" without concrete verified evidence
+- Comments that tell the reader to verify something instead of stating a verified fact
 - Comments that could have been verified with tools but were not
 
 ## Noisy Comments
