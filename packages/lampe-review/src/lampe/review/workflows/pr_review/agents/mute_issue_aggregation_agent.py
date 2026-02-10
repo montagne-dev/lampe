@@ -30,11 +30,12 @@ class MuteIssueAggregationAgent(FunctionCallingAgent):
     def _create_mute_issue_tool() -> FunctionTool:
         async def mute_issue(ctx: Context, issue_id: str) -> str:
             """Mark an issue as muted. Call this for each issue you want to hide from the final review."""
-            muted_ids = await ctx.store.get("muted_ids", default=None)
-            if muted_ids is None:
-                muted_ids = set()
-                await ctx.store.set("muted_ids", muted_ids)
+            muted_list = await ctx.store.get("muted_ids", default=None)
+            if muted_list is None:
+                muted_list = []
+            muted_ids = set(muted_list)
             muted_ids.add(issue_id)
+            await ctx.store.set("muted_ids", list(muted_ids))
             return f"Muted issue {issue_id}"
 
         return FunctionTool.from_defaults(

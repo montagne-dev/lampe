@@ -179,12 +179,12 @@ class LLMAggregationWorkflow(Workflow):
 
         try:
             agent_ctx = WorkflowContext(self._agent)
-            await agent_ctx.store.set("muted_ids", set())
+            await agent_ctx.store.set("muted_ids", [])
             await self._agent.run(
                 start_event=MuteIssueStart(user_prompt=user_prompt),
                 ctx=agent_ctx,
             )
-            muted_ids = await agent_ctx.store.get("muted_ids", default=set())
+            muted_ids = set(await agent_ctx.store.get("muted_ids", default=[]))
             aggregated_reviews = _apply_muted_flags(ev.agent_reviews, muted_ids)
 
             if self.verbose:

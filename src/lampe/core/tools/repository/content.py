@@ -86,7 +86,7 @@ def get_file_content_at_commit(
             file_size = get_file_size_at_commit(file_path, commit_hash, repo_path)
             if file_size > MAX_FILE_SIZE_CHARS:
                 error_msg = (
-                    f"Error: File too large (>300KB). File size: {file_size} bytes. Cannot read full file content. "
+                    f"Error: File too large (>{MAX_FILE_SIZE_CHARS // 1000}KB). File size: {file_size} bytes. Cannot read full file content. "
                     "Please use line_start and line_end parameters to read specific line ranges."
                 )
                 logger.warning(f"File {file_path} at {commit_hash} is too large ({file_size} bytes)")
