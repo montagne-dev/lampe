@@ -1,14 +1,11 @@
-"""Prompt for LLM-based review aggregation step."""
+"""Prompt for mute-issue aggregation agent that cleans and deduplicates review comments."""
 
 from typing import Any
 
 ISSUE_BLOCK_TEMPLATE = """### Issue `{issue_id}`
 - **Agent:** {agent}
 - **File:** `{file_path}`
-- **Line:** 
-    ```
-    {line}
-    ```
+- **Line:** {line}
 - **Severity:** {severity}
 - **Category:** {category}
 - **Comment:** {comment}
@@ -35,7 +32,7 @@ def format_issues_as_markdown(issues: list[dict[str, Any]]) -> str:
     return '\n\n'.join(blocks)
 
 
-LLM_AGGREGATION_SYSTEM_PROMPT = """
+MUTE_ISSUE_AGGREGATION_AGENT_SYSTEM_PROMPT = """
 # Role and Objective
 You are an expert code review aggregator. Your task is to clean, deduplicate, and filter review comments from multiple parallel code reviews.
 
@@ -82,7 +79,7 @@ Mute comments that are: style preferences, minor formatting, personal preference
 - Do not output or return any JSON - your only output is the tool calls and final summary
 """  # noqa: E501
 
-LLM_AGGREGATION_USER_PROMPT = """
+MUTE_ISSUE_AGGREGATION_USER_PROMPT = """
 Below are code reviews from multiple agents that reviewed different files in parallel.
 Each agent reviewed one specific file's diff to find bugs.
 
