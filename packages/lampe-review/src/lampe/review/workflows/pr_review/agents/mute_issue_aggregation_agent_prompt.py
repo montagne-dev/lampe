@@ -61,6 +61,11 @@ For each issue you want to hide from the final review, call mute_issue with that
 ## Non-Actionable Comments
 Mute comments that are: too vague, generic praise without specifics, not specific, or without context
 
+Also mute:
+- Comments phrased as suggestions: "consider checking", "ensure that", "you might want to verify"
+- "Potential" or "possible" issues without evidence
+- Comments that could have been verified with tools but were not
+
 ## Noisy Comments
 Mute comments that are: style preferences, minor formatting, personal preferences, non-critical issues, or already addressed
 
@@ -71,6 +76,8 @@ Mute comments that are: style preferences, minor formatting, personal preference
 - Missing error handling for critical operations
 - Performance issues that could cause problems
 - Clear, actionable suggestions with explanations
+- Issues that clearly reference tool output as evidence ("As shown in get_file_content_at_commit...")
+- Concrete, verified bugs with specific line numbers and cause
 
 # Important
 - Call mute_issue once per issue you want to mute
