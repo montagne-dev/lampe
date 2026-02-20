@@ -186,8 +186,31 @@ class GitHubProvider(Provider):
                                     f"**{file_review.file_path} (Line {line}):** {comment}"
                                 )
 
-                    # Post summary comment if no line comments
-                    if not file_review.line_comments and file_review.summary:
+                    # Post structured comments (e.g. from agentic review) as inline comments
+                    if file_review.structured_comments:
+                        for sc in file_review.structured_comments:
+                            if getattr(sc, "muted", False):
+                                continue
+                            try:
+                                pull_request.create_review_comment(
+                                    body=f"## 🔦🐛 [{sc.severity}] {sc.comment}",
+                                    commit=pull_request.head.sha,
+                                    path=file_review.file_path,
+                                    line=sc.line_number,
+                                )
+                            except Exception as e:
+                                logger.warning(
+                                    f"Failed to post comment for {file_review.file_path}:{sc.line_number}: {e}"
+                                )
+                                pull_request.create_issue_comment(
+                                    f"**{file_review.file_path} (Line {sc.line_number}):** {sc.comment}"
+                                )
+
+                    # Post summary comment if no inline comments were posted
+                    has_inline = bool(file_review.line_comments) or any(
+                        not getattr(sc, "muted", False) for sc in file_review.structured_comments
+                    )
+                    if not has_inline and file_review.summary:
                         pull_request.create_issue_comment(f"**{file_review.file_path}:** {file_review.summary}")
 
             logger.info(f"✅ Successfully posted PR #{self.pull_request.number} review comments on GitHub")

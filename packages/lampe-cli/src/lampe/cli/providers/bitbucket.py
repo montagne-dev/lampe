@@ -258,8 +258,37 @@ class BitbucketProvider(Provider):
                             except Exception as e:
                                 logger.warning(f"Failed to post comment for {file_review.file_path}:{line}: {e}")
 
-                    # Post file summary comment if no line comments
-                    if not file_review.line_comments and file_review.summary:
+                    # Post structured comments (e.g. from agentic review) as inline comments
+                    if file_review.structured_comments:
+                        comment_url = (
+                            f"{self.base_url}/2.0/repositories/{self.workspace}/"
+                            f"{self.repo_slug}/pullrequests/{self.pull_request.number}/comments"
+                        )
+                        for sc in file_review.structured_comments:
+                            if getattr(sc, "muted", False):
+                                continue
+                            line_number = sc.line_number
+                            try:
+                                comment_data = {
+                                    "content": {"raw": f"## 🔦🐛 [{sc.severity}] {sc.comment}"},
+                                    "inline": {
+                                        "from": line_number - 1 if line_number != 0 else 0,
+                                        "to": line_number,
+                                        "start_from": line_number - 1 if line_number != 0 else 0,
+                                        "start_to": line_number,
+                                        "path": file_review.file_path,
+                                    },
+                                }
+                                response = requests.post(comment_url, json=comment_data, headers=self.auth_headers)
+                                response.raise_for_status()
+                            except Exception as e:
+                                logger.warning(f"Failed to post comment for {file_review.file_path}:{line_number}: {e}")
+
+                    # Post file summary comment if no inline comments were posted
+                    has_inline = bool(file_review.line_comments) or any(
+                        not getattr(sc, "muted", False) for sc in file_review.structured_comments
+                    )
+                    if not has_inline and file_review.summary:
                         try:
                             comment_url = (
                                 f"{self.base_url}/2.0/repositories/{self.workspace}/"

@@ -45,6 +45,9 @@ class ReviewComment(BaseModel):
     category: str = Field(..., description="Category of the issue (e.g., security, performance, quality)")
     agent_name: str = Field(..., description="Name of the agent that found this issue")
     muted: bool = Field(default=False, description="Whether this issue was muted during aggregation")
+    mute_reason: Optional[str] = Field(
+        default=None, description="Reason why this issue was muted (e.g. duplicate, hallucination)"
+    )
 
 
 class FileReview(BaseModel):
@@ -59,6 +62,9 @@ class FileReview(BaseModel):
     agent_name: Optional[str] = Field(default=None, description="Name of the agent that performed this review")
     muted_line_numbers: set[str] = Field(
         default_factory=set, description="Line numbers with muted comments (for line_comments)"
+    )
+    muted_line_reasons: dict[str, str] = Field(
+        default_factory=dict, description="Line number to mute reason (for line_comments)"
     )
 
     @field_serializer("muted_line_numbers")

@@ -43,9 +43,9 @@ You receive reviews from multiple agents that reviewed different files in parall
 4. Noisy (style nitpicks, unnecessary suggestions that don't add value)
 
 # How to Work
-You have access to a single tool: **mute_issue(issue_id: str)**
+You have access to a single tool: **mute_issue(issue_id: str, reason: str)**
 
-For each issue you want to hide from the final review, call mute_issue with that issue's ID. Do NOT call it for issues you want to keep - only for issues that should be muted.
+For each issue you want to hide from the final review, call mute_issue with that issue's ID and a brief reason (e.g. "duplicate", "hallucination", "non-actionable", "noisy"). Do NOT call it for issues you want to keep - only for issues that should be muted. You may and should issue multiple mute_issue calls in a single response when you want to mute several issues; batch all of them together rather than one call per round.
 
 # Filtering Guidelines
 
@@ -81,8 +81,8 @@ Mute comments that are: style preferences, minor formatting, personal preference
 - Concrete, verified bugs with specific line numbers and cause
 
 # Important
-- Call mute_issue once per issue you want to mute
-- You may call it multiple times in sequence for different issues
+- Call mute_issue(issue_id, reason) once per issue you want to mute; always provide a short reason
+- Prefer issuing all mute_issue calls in a single response (multiple tool calls at once) rather than one at a time
 - When you are done identifying all issues to mute, respond with a brief summary (e.g. "Muted N issues: duplicates, hallucinations, ...")
 - Do not output or return any JSON - your only output is the tool calls and final summary
 """  # noqa: E501
@@ -99,7 +99,7 @@ Each agent reviewed one specific file's diff to find bugs.
 
 **Instructions:**
 1. Analyze all the issues listed above
-2. For each issue that should be muted (duplicate, hallucination, non-actionable, noisy), call mute_issue with its issue_id
+2. For each issue that should be muted (duplicate, hallucination, non-actionable, noisy), call mute_issue(issue_id, reason) with its issue_id and a brief reason
 3. Do NOT call mute_issue for high-quality, actionable feedback you want to keep
 4. When done, provide a brief summary of what you muted
 

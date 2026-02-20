@@ -47,8 +47,10 @@ def search_in_files(
             return f"```grep\n{grep_output}\n```"
         return "No matches found"
     except GitCommandError as e:
-        if e.status == 128:
+        # Exit 1 = no match (git grep documented behavior)
+        if e.status == 1:
             return "No matches found"
+        # 128 and other codes = real errors (invalid ref, path issues, etc.)
         return f"Error executing git grep: {str(e)}"
 
 

@@ -28,22 +28,22 @@ class MuteIssueAggregationAgent(FunctionCallingAgent):
 
     @staticmethod
     def _create_mute_issue_tool() -> FunctionTool:
-        async def mute_issue(ctx: Context, issue_id: str) -> str:
-            """Mark an issue as muted. Call this for each issue you want to hide from the final review."""
-            muted_list = await ctx.store.get("muted_ids", default=None)
-            if muted_list is None:
-                muted_list = []
-            muted_ids = set(muted_list)
-            muted_ids.add(issue_id)
-            await ctx.store.set("muted_ids", list(muted_ids))
-            return f"Muted issue {issue_id}"
+        async def mute_issue(ctx: Context, issue_id: str, reason: str) -> str:
+            """Mark an issue as muted. Call with issue_id and a brief reason for each issue to hide."""
+            muted_reasons = await ctx.store.get("muted_reasons", default=None)
+            if muted_reasons is None:
+                muted_reasons = {}
+            muted_reasons = dict(muted_reasons)
+            muted_reasons[issue_id] = reason
+            await ctx.store.set("muted_reasons", muted_reasons)
+            return f"Muted issue {issue_id}: {reason}"
 
         return FunctionTool.from_defaults(
             async_fn=mute_issue,
             name="mute_issue",
             description=(
-                "Mark an issue as muted. Call with issue_id for each issue to hide "
-                "(duplicates, hallucinations, non-actionable, noisy)."
+                "Mark an issue as muted. Call with issue_id and reason for each issue to hide "
+                "(e.g. duplicate, hallucination, non-actionable, noisy)."
             ),
         )
 

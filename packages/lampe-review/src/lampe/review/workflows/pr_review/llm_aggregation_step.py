@@ -77,9 +77,10 @@ def _build_issues_with_ids(reviews: list[AgentReviewOutput]) -> str:
     return format_issues_as_markdown(issues)
 
 
-def _apply_muted_flags(reviews: list[AgentReviewOutput], muted_ids: set[str]) -> list[AgentReviewOutput]:
-    """Apply muted flags to reviews based on muted issue IDs. Returns deep copies."""
+def _apply_muted_flags(reviews: list[AgentReviewOutput], muted_reasons: dict[str, str]) -> list[AgentReviewOutput]:
+    """Apply muted flags and reasons to reviews based on muted issue IDs. Returns deep copies."""
     result: list[AgentReviewOutput] = []
+    muted_ids = set(muted_reasons.keys())
 
     for agent_idx, agent_output in enumerate(reviews):
         new_reviews: list[FileReview] = []
@@ -90,6 +91,7 @@ def _apply_muted_flags(reviews: list[AgentReviewOutput], muted_ids: set[str]) ->
             for comment_idx, comment in enumerate(file_review.structured_comments):
                 issue_id = f"{agent_idx}|{file_idx}|s|{comment_idx}"
                 muted = issue_id in muted_ids
+                mute_reason = muted_reasons.get(issue_id) if muted else None
                 new_structured.append(
                     ReviewComment(
                         line_number=comment.line_number,
@@ -98,15 +100,19 @@ def _apply_muted_flags(reviews: list[AgentReviewOutput], muted_ids: set[str]) ->
                         category=comment.category,
                         agent_name=comment.agent_name,
                         muted=muted,
+                        mute_reason=mute_reason,
                     )
                 )
 
-            # Collect muted line numbers
+            # Collect muted line numbers and reasons
             muted_line_numbers: set[str] = set()
+            muted_line_reasons: dict[str, str] = {}
             for line_num in file_review.line_comments:
                 issue_id = f"{agent_idx}|{file_idx}|l|{line_num}"
                 if issue_id in muted_ids:
                     muted_line_numbers.add(line_num)
+                    if issue_id in muted_reasons:
+                        muted_line_reasons[line_num] = muted_reasons[issue_id]
 
             new_reviews.append(
                 FileReview(
@@ -116,6 +122,7 @@ def _apply_muted_flags(reviews: list[AgentReviewOutput], muted_ids: set[str]) ->
                     summary=file_review.summary,
                     agent_name=file_review.agent_name,
                     muted_line_numbers=muted_line_numbers,
+                    muted_line_reasons=muted_line_reasons,
                 )
             )
 
@@ -151,7 +158,7 @@ class LLMAggregationWorkflow(Workflow):
         super().__init__(*args, timeout=timeout, verbose=verbose, **kwargs)
         self.verbose = verbose
         self.logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
-        self.llm = llm or LiteLLM(model=MODELS.GPT_5_2025_08_07, temperature=1, reasoning_effort="high")
+        self.llm = llm or LiteLLM(model=MODELS.GPT_5_2025_08_07, temperature=1, reasoning_effort="low")
         self.max_tool_iterations = max_tool_iterations
         self._agent = MuteIssueAggregationAgent(
             llm=self.llm,
@@ -179,16 +186,17 @@ class LLMAggregationWorkflow(Workflow):
 
         try:
             agent_ctx = WorkflowContext(self._agent)
-            await agent_ctx.store.set("muted_ids", [])
+            await agent_ctx.store.set("muted_reasons", {})
             await self._agent.run(
                 start_event=MuteIssueStart(user_prompt=user_prompt),
                 ctx=agent_ctx,
             )
-            muted_ids = set(await agent_ctx.store.get("muted_ids", default=[]))
-            aggregated_reviews = _apply_muted_flags(ev.agent_reviews, muted_ids)
+            muted_reasons = await agent_ctx.store.get("muted_reasons", default={})
+            muted_reasons = dict(muted_reasons) if muted_reasons else {}
+            aggregated_reviews = _apply_muted_flags(ev.agent_reviews, muted_reasons)
 
             if self.verbose:
-                self.logger.debug(f"Aggregation complete: muted {len(muted_ids)} issues")
+                self.logger.debug(f"Aggregation complete: muted {len(muted_reasons)} issues")
 
         except Exception as e:
             self.logger.exception(f"Failed to aggregate reviews: {e}")

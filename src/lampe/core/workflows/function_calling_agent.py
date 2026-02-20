@@ -52,7 +52,7 @@ class FunctionCallingAgent(Workflow):
         **kwargs: Any,
     ) -> None:
         self.logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
-        self.logger.info("Initializing FunctionCallingAgent with args: %s, kwargs: %s", args, kwargs)
+        self.logger.info(f"Initializing FunctionCallingAgent with args: {args}, kwargs: {kwargs}")
         super().__init__(*args, **kwargs)
         self.tools = tools or []
         self.llm = llm or LiteLLM(

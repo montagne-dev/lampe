@@ -67,29 +67,35 @@ def test_build_issues_with_ids(sample_agent_reviews):
 
 
 def test_apply_muted_flags(sample_agent_reviews):
-    """Test that muted flags are applied correctly based on issue IDs."""
-    muted_ids = {"0|0|s|1", "0|0|l|15"}  # Mute second structured comment and line comment
+    """Test that muted flags and reasons are applied correctly based on issue IDs."""
+    muted_reasons = {
+        "0|0|s|1": "non-actionable",
+        "0|0|l|15": "noisy",
+    }
 
-    result = _apply_muted_flags(sample_agent_reviews, muted_ids)
+    result = _apply_muted_flags(sample_agent_reviews, muted_reasons)
 
     assert len(result) == 1
     file_review = result[0].reviews[0]
     # First structured comment: not muted
     assert file_review.structured_comments[0].muted is False
-    # Second structured comment: muted
+    assert file_review.structured_comments[0].mute_reason is None
+    # Second structured comment: muted with reason
     assert file_review.structured_comments[1].muted is True
-    # Line comment 15: muted
+    assert file_review.structured_comments[1].mute_reason == "non-actionable"
+    # Line comment 15: muted with reason
     assert "15" in file_review.muted_line_numbers
+    assert file_review.muted_line_reasons.get("15") == "noisy"
 
 
 @pytest.mark.asyncio
 async def test_llm_aggregation_with_tool_calls(sample_agent_reviews):
     """Test that LLM aggregation workflow applies muted flags from tool calls."""
-    # Create tool call - LLM mutes issue 0|0|s|1 (the "Looks good" comment)
+    # Create tool call - LLM mutes issue 0|0|s|1 (the "Looks good" comment) with reason
     mock_tool_call = ToolSelection(
         tool_id="call_123",
         tool_name="mute_issue",
-        tool_kwargs={"issue_id": "0|0|s|1"},
+        tool_kwargs={"issue_id": "0|0|s|1", "reason": "non-actionable"},
     )
 
     # First response: has tool calls
@@ -132,8 +138,9 @@ async def test_llm_aggregation_with_tool_calls(sample_agent_reviews):
 
     assert isinstance(result, LLMAggregationCompleteEvent)
     assert len(result.aggregated_reviews) == 1
-    # The "Looks good" comment (index 1) should be muted
+    # The "Looks good" comment (index 1) should be muted with reason
     assert result.aggregated_reviews[0].reviews[0].structured_comments[1].muted is True
+    assert result.aggregated_reviews[0].reviews[0].structured_comments[1].mute_reason == "non-actionable"
     assert result.aggregated_reviews[0].reviews[0].structured_comments[0].muted is False
 
 
