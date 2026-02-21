@@ -233,6 +233,80 @@ The diff-by-diff variant reviews each file change in parallel, providing focused
 - Parallel processing for faster reviews
 - File-specific bug detection
 
+### `lampe check-reviewed`
+
+Check if the token user has already reviewed a pull request.
+
+#### Usage
+
+```sh
+lampe check-reviewed [OPTIONS]
+```
+
+#### Required Options
+
+- `--repo PATH`: Local path to the git repository
+
+#### Optional Options
+
+- `--pr INT`: Pull request number (required for non-console providers)
+- `--output [auto|console|github|gitlab|bitbucket]`: Output provider (default: `auto`)
+- `--repo-full-name TEXT`: Repository full name (e.g. `owner/repo`)
+
+#### Exit Codes
+
+- `0`: PR has already been reviewed by the token user
+- `1`: PR has not been reviewed by the token user yet
+
+#### Examples
+
+**Check if PR has been reviewed (Bitbucket):**
+
+```sh
+lampe check-reviewed \
+  --repo . \
+  --pr 123 \
+  --output bitbucket
+```
+
+**Check if PR has been reviewed (GitHub):**
+
+```sh
+lampe check-reviewed \
+  --repo . \
+  --pr 456 \
+  --output github
+```
+
+**Use in conditional logic (Bitbucket Pipelines):**
+
+```sh
+if lampe check-reviewed --repo . --pr $BITBUCKET_PR_ID --output bitbucket; then
+  echo "PR already reviewed. Skipping review."
+else
+  echo "Running review..."
+  lampe review --repo . --base $MERGE_BASE --head $HEAD_COMMIT --output bitbucket
+fi
+```
+
+**Use in conditional logic (GitHub Actions):**
+
+```sh
+if lampe check-reviewed --repo . --pr ${{ github.event.pull_request.number }} --output github; then
+  echo "PR already reviewed. Skipping review."
+else
+  echo "Running review..."
+  lampe review --repo . --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }} --output github
+fi
+```
+
+#### Notes
+
+- The command checks if the token user (the account associated with the authentication token) has already commented on the PR
+- For console output, the PR number is optional
+- For provider-specific output (GitHub, GitLab, Bitbucket), the PR number is required
+- This command is particularly useful in CI/CD pipelines to avoid running redundant reviews
+
 ### `lampe healthcheck`
 
 Verify that the CLI is correctly installed and configured.

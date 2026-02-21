@@ -62,11 +62,11 @@ pipelines:
 
 ## Review Only on PR Open
 
-By default, Bitbucket Pipelines triggers on every push to a pull request branch. If you want to run code reviews only when a PR is first opened (and skip reviews on subsequent pushes), you can use one of the following approaches.
+By default, Bitbucket Pipelines triggers on every push to a pull request branch. If you want to run code reviews only when a PR is first opened (and skip reviews on subsequent pushes), you can use the `lampe check-reviewed` command to check if the token user has already reviewed the PR.
 
-### Approach 1: Check for Existing Reviews (Recommended)
+### Using `lampe check-reviewed`
 
-This approach checks if the token user (the account associated with `LAMPE_BITBUCKET_TOKEN`) has already commented on the PR. If the token user has commented, the review step is skipped. This is the most reliable method since it directly checks the PR state and works regardless of the review format or content.
+The `lampe check-reviewed` command checks if the token user (the account associated with `LAMPE_BITBUCKET_TOKEN`) has already commented on the PR. It returns exit code 0 if reviewed, 1 if not reviewed. This allows you to conditionally run reviews only when needed.
 
 ```yaml
 # bitbucket-pipelines.yml
@@ -84,9 +84,6 @@ pipelines:
             - curl -LsSf https://astral.sh/uv/install.sh | sh
             - export PATH="$HOME/.local/bin:$PATH"
             - uv tool install git+https://github.com/montagne-dev/lampe.git@main
-
-            # Install jq for JSON parsing
-            - apt-get update && apt-get install -y jq curl
 
             # Fetch branches
             - git fetch origin "+refs/heads/$BITBUCKET_PR_DESTINATION_BRANCH:refs/remotes/origin/$BITBUCKET_PR_DESTINATION_BRANCH"
@@ -103,101 +100,17 @@ pipelines:
 
             # Check if review already exists and run review only on PR open
             - |
-              echo "Checking if PR already has a review from the token user..."
-
-              # Get the current authenticated user (token owner)
-              AUTH_HEADER="Authorization: Bearer $LAMPE_BITBUCKET_TOKEN"
-              USER_INFO=$(curl -s -H "$AUTH_HEADER" "https://api.bitbucket.org/2.0/user")
-              TOKEN_USER_UUID=$(echo "$USER_INFO" | jq -r '.uuid // .account_id')
-
-              if [ -z "$TOKEN_USER_UUID" ] || [ "$TOKEN_USER_UUID" = "null" ]; then
-                echo "Warning: Could not determine token user. Proceeding with review..."
-                TOKEN_USER_UUID=""
+              if lampe check-reviewed --repo . --pr $BITBUCKET_PR_ID --output bitbucket; then
+                echo "PR has already been reviewed by the token user. Skipping review."
               else
-                echo "Token user UUID: $TOKEN_USER_UUID"
-              fi
-
-              # Get PR comments and check if token user has already commented
-              API_URL="https://api.bitbucket.org/2.0/repositories/$BITBUCKET_WORKSPACE/$BITBUCKET_REPO_SLUG/pullrequests/$BITBUCKET_PR_ID/comments"
-
-              if [ -n "$TOKEN_USER_UUID" ]; then
-                # Check for comments by the token user
-                REVIEW_EXISTS=$(curl -s -H "$AUTH_HEADER" "$API_URL" | jq -r --arg uuid "$TOKEN_USER_UUID" '.values[] | select(.user.uuid == $uuid or .user.account_id == $uuid) | .id' | head -1)
-              else
-                # Fallback: check by username if UUID lookup failed
-                TOKEN_USERNAME=$(echo "$USER_INFO" | jq -r '.username // .nickname')
-                if [ -n "$TOKEN_USERNAME" ] && [ "$TOKEN_USERNAME" != "null" ]; then
-                  echo "Token username: $TOKEN_USERNAME"
-                  REVIEW_EXISTS=$(curl -s -H "$AUTH_HEADER" "$API_URL" | jq -r --arg username "$TOKEN_USERNAME" '.values[] | select(.user.username == $username or .user.nickname == $username) | .id' | head -1)
-                fi
-              fi
-
-              if [ -n "$REVIEW_EXISTS" ]; then
-                echo "Review already exists from token user (comment ID: $REVIEW_EXISTS). Skipping review."
-              else
-                echo "No existing review found from token user. Running review..."
+                echo "No existing review found. Running review..."
                 lampe review --repo . --base $MERGE_BASE --head $BITBUCKET_COMMIT --title "$BITBUCKET_PR_TITLE" --output bitbucket --review-depth standard
               fi
           services:
             - docker
 ```
 
-### Approach 2: Check Commit Count (Alternative)
-
-This approach checks if this is likely the first push to the PR by comparing the number of commits. This is less reliable but doesn't require API calls.
-
-```yaml
-# bitbucket-pipelines.yml
-
-image: python:3.12
-
-pipelines:
-  pull-requests:
-    "**":
-      - step:
-          name: LampeCI
-          script:
-            # Install dependencies
-            - echo "Installing uv..."
-            - curl -LsSf https://astral.sh/uv/install.sh | sh
-            - export PATH="$HOME/.local/bin:$PATH"
-            - uv tool install git+https://github.com/montagne-dev/lampe.git@main
-
-            # Fetch branches
-            - git fetch origin "+refs/heads/$BITBUCKET_PR_DESTINATION_BRANCH:refs/remotes/origin/$BITBUCKET_PR_DESTINATION_BRANCH"
-            - git fetch origin "+refs/heads/$BITBUCKET_BRANCH:refs/remotes/origin/$BITBUCKET_BRANCH"
-            - MERGE_BASE=$(git merge-base origin/$BITBUCKET_PR_DESTINATION_BRANCH origin/$BITBUCKET_BRANCH)
-
-            # Set environment variables
-            - export OPENAI_API_KEY=$OPENAI_API_KEY
-            - export ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
-            - export LAMPE_BITBUCKET_TOKEN=$LAMPE_BITBUCKET_TOKEN
-
-            # Always generate/update PR description
-            - lampe describe --repo . --base $MERGE_BASE --head $BITBUCKET_COMMIT --title "$BITBUCKET_PR_TITLE" --output bitbucket
-
-            # Check if this is the first commit in PR and run review only on PR open
-            - |
-              echo "Checking if this is the first push to the PR..."
-
-              # Count commits between merge base and head
-              COMMIT_COUNT=$(git rev-list --count $MERGE_BASE..$BITBUCKET_COMMIT)
-              echo "Commit count since merge base: $COMMIT_COUNT"
-
-              # Check if merge base equals destination branch HEAD (likely first push)
-              DEST_HEAD=$(git rev-parse origin/$BITBUCKET_PR_DESTINATION_BRANCH)
-
-              if [ "$MERGE_BASE" = "$DEST_HEAD" ] && [ "$COMMIT_COUNT" -le 5 ]; then
-                echo "Likely first push to PR. Running review..."
-                lampe review --repo . --base $MERGE_BASE --head $BITBUCKET_COMMIT --title "$BITBUCKET_PR_TITLE" --output bitbucket --review-depth standard
-              else
-                echo "PR has been updated. Skipping review to avoid redundancy."
-              fi
-          services:
-            - docker
-```
-
-### Approach 3: Separate Steps with Conditions
+### Separate Steps Configuration
 
 You can also separate description generation and review into different steps, with the review step conditionally skipped:
 
@@ -231,7 +144,6 @@ pipelines:
             - curl -LsSf https://astral.sh/uv/install.sh | sh
             - export PATH="$HOME/.local/bin:$PATH"
             - uv tool install git+https://github.com/montagne-dev/lampe.git@main
-            - apt-get update && apt-get install -y jq curl
             - git fetch origin "+refs/heads/$BITBUCKET_PR_DESTINATION_BRANCH:refs/remotes/origin/$BITBUCKET_PR_DESTINATION_BRANCH"
             - git fetch origin "+refs/heads/$BITBUCKET_BRANCH:refs/remotes/origin/$BITBUCKET_BRANCH"
             - MERGE_BASE=$(git merge-base origin/$BITBUCKET_PR_DESTINATION_BRANCH origin/$BITBUCKET_BRANCH)
@@ -239,75 +151,25 @@ pipelines:
             - export ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
             - export LAMPE_BITBUCKET_TOKEN=$LAMPE_BITBUCKET_TOKEN
             - |
-              echo "Checking if PR already has a review from the token user..."
-
-              # Get the current authenticated user (token owner)
-              AUTH_HEADER="Authorization: Bearer $LAMPE_BITBUCKET_TOKEN"
-              USER_INFO=$(curl -s -H "$AUTH_HEADER" "https://api.bitbucket.org/2.0/user")
-              TOKEN_USER_UUID=$(echo "$USER_INFO" | jq -r '.uuid // .account_id')
-
-              if [ -z "$TOKEN_USER_UUID" ] || [ "$TOKEN_USER_UUID" = "null" ]; then
-                echo "Warning: Could not determine token user. Proceeding with review..."
-                TOKEN_USER_UUID=""
-              else
-                echo "Token user UUID: $TOKEN_USER_UUID"
-              fi
-
-              # Get PR comments and check if token user has already commented
-              API_URL="https://api.bitbucket.org/2.0/repositories/$BITBUCKET_WORKSPACE/$BITBUCKET_REPO_SLUG/pullrequests/$BITBUCKET_PR_ID/comments"
-
-              if [ -n "$TOKEN_USER_UUID" ]; then
-                # Check for comments by the token user
-                REVIEW_EXISTS=$(curl -s -H "$AUTH_HEADER" "$API_URL" | jq -r --arg uuid "$TOKEN_USER_UUID" '.values[] | select(.user.uuid == $uuid or .user.account_id == $uuid) | .id' | head -1)
-              else
-                # Fallback: check by username if UUID lookup failed
-                TOKEN_USERNAME=$(echo "$USER_INFO" | jq -r '.username // .nickname')
-                if [ -n "$TOKEN_USERNAME" ] && [ "$TOKEN_USERNAME" != "null" ]; then
-                  echo "Token username: $TOKEN_USERNAME"
-                  REVIEW_EXISTS=$(curl -s -H "$AUTH_HEADER" "$API_URL" | jq -r --arg username "$TOKEN_USERNAME" '.values[] | select(.user.username == $username or .user.nickname == $username) | .id' | head -1)
-                fi
-              fi
-
-              if [ -n "$REVIEW_EXISTS" ]; then
-                echo "Review already exists from token user (comment ID: $REVIEW_EXISTS). Exiting step."
+              if lampe check-reviewed --repo . --pr $BITBUCKET_PR_ID --output bitbucket; then
+                echo "PR has already been reviewed by the token user. Exiting step."
                 exit 0
               fi
-
-              echo "No existing review found from token user. Proceeding with review..."
+              echo "No existing review found. Proceeding with review..."
             - lampe review --repo . --base $MERGE_BASE --head $BITBUCKET_COMMIT --title "$BITBUCKET_PR_TITLE" --output bitbucket --review-depth standard
           services:
             - docker
 ```
 
-### Choosing the Right Approach
-
-**Use Approach 1 (Check for Existing Reviews)** when:
-
-- You want the most reliable detection (checks by token user, not content)
-- You don't mind extra API calls (one to get user info, one to check comments)
-- You want to ensure no duplicate reviews from the same token user
-
-**Use Approach 2 (Check Commit Count)** when:
-
-- You want to avoid API calls
-- You're okay with a heuristic-based approach
-- Performance is a concern
-
-**Use Approach 3 (Separate Steps)** when:
-
-- You want clear separation of concerns
-- You want to see review step status in the pipeline UI
-- You want to easily enable/disable review step
-
 ### Important Notes
 
-1. **API Rate Limits**: Approach 1 makes two API calls to Bitbucket (one to get the token user info, one to check PR comments). Ensure your token has sufficient rate limits.
+1. **Review Detection**: The `check-reviewed` command checks if the token user (the account associated with `LAMPE_BITBUCKET_TOKEN`) has already commented on the PR. This is more reliable than searching for specific strings and works regardless of the review format.
 
-2. **Review Detection**: The review detection checks if the token user (the account associated with `LAMPE_BITBUCKET_TOKEN`) has already commented on the PR. This is more reliable than searching for specific strings and works regardless of the review format.
+2. **Description vs Review**: PR descriptions are always generated/updated on every push, while reviews only run on PR open. This allows descriptions to stay current while avoiding redundant reviews.
 
-3. **Description vs Review**: PR descriptions are always generated/updated on every push, while reviews only run on PR open. This allows descriptions to stay current while avoiding redundant reviews.
+3. **Manual Re-review**: If you need to re-run a review after changes, you can use the manual pipeline trigger or delete the existing review comment.
 
-4. **Manual Re-review**: If you need to re-run a review after changes, you can use the manual pipeline trigger or delete the existing review comment.
+4. **Exit Codes**: The `check-reviewed` command returns exit code 0 if the PR has been reviewed, and exit code 1 if it hasn't. This makes it easy to use in conditional statements.
 
 ## Manual Pipeline Triggers
 
@@ -609,6 +471,7 @@ When you trigger the manual pipeline, Bitbucket will prompt you to enter the fol
 
 - `lampe describe` - Generate PR descriptions
 - `lampe review` - Generate code reviews
+- `lampe check-reviewed` - Check if a PR has already been reviewed by the token user
 - `lampe healthcheck` - Validate setup
 
 ### Review Command
