@@ -1,6 +1,10 @@
 # CHANGELOG
 
 
+## v0.4.1 (2026-02-21)
+### Documentation
+
+* docs: update documentation with new command for bitbucket (#6) ([`a6a522b`](https://github.com/montagne-dev/lampe/commit/a6a522bf3bfa55ca5c36e1e9b6cea327cb0836e7))
 ## v0.4.0 (2025-11-30)
 ### Features
 
