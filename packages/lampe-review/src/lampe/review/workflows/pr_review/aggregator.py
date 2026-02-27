@@ -33,23 +33,28 @@ class ReviewAggregator:
 
     def _merge_file_reviews(self, file_path: str, reviews: list[FileReview]) -> FileReview:
         """Merge multiple reviews for the same file."""
-        # Combine all line comments
+        # Combine all line comments (excluding muted)
         all_line_comments = {}
         all_structured_comments = []
         all_summaries = []
         agent_names = []
 
         for review in reviews:
-            # Merge line comments
+            # Merge line comments (skip muted lines)
+            muted_lines = getattr(review, "muted_line_numbers", set()) or set()
             for line_num, comment in review.line_comments.items():
+                if line_num in muted_lines:
+                    continue
                 if line_num in all_line_comments:
                     # Combine comments from different agents
                     all_line_comments[line_num] += f" [{review.agent_name}]: {comment}"
                 else:
                     all_line_comments[line_num] = f"[{review.agent_name}]: {comment}"
 
-            # Collect structured comments
-            all_structured_comments.extend(review.structured_comments)
+            # Collect structured comments (excluding muted)
+            for comment in review.structured_comments:
+                if not getattr(comment, "muted", False):
+                    all_structured_comments.append(comment)
 
             # Collect summaries
             if review.summary:

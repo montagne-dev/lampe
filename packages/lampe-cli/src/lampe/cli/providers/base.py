@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 from abc import ABC, abstractmethod
@@ -60,6 +61,10 @@ class PRReviewPayload:
 
             review_text += "---\n\n"
         return review_text
+
+    def json_payload(self) -> str:
+        """Return the payload as a JSON string."""
+        return json.dumps([review.model_dump() for review in self.reviews], indent=2)
 
 
 class ProviderType(StrEnum):

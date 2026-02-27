@@ -6,6 +6,7 @@ from pathlib import Path
 import typer
 
 from lampe.cli.orchestrators.pr_review import (
+    AgenticOrchestratorAdapter,
     AgenticReviewAdapter,
     DiffByDiffReviewAdapter,
     PRReviewConfig,
@@ -27,7 +28,10 @@ def review(
     title: str = typer.Option("Pull Request", help="PR title (local runs)"),
     output: str = typer.Option("auto", help="Output provider (auto|console|github|gitlab|bitbucket)"),
     review_depth: ReviewDepth = typer.Option(ReviewDepth.STANDARD, help="Review depth (basic|standard|comprehensive)"),
-    variant: str = typer.Option("multi-agent", help="Review variant (multi-agent|diff-by-diff)"),
+    variant: str = typer.Option(
+        "multi-agent",
+        help="Review variant (multi-agent|diff-by-diff|agentic)",
+    ),
     guidelines: list[str] | None = typer.Option(None, "--guideline", help="Custom review guidelines (can be repeated)"),
     files_exclude: list[str] | None = typer.Option(None, "--exclude"),
     timeout: int | None = typer.Option(None, "--timeout-seconds"),
@@ -54,7 +58,12 @@ def review(
 
     provider = Provider.create_provider(provider_name=output, repository=repo_model, pull_request=pr_model)
 
-    generator = DiffByDiffReviewAdapter() if variant == "diff-by-diff" else AgenticReviewAdapter()
+    if variant == "diff-by-diff":
+        generator = DiffByDiffReviewAdapter()
+    elif variant == "agentic":
+        generator = AgenticOrchestratorAdapter()
+    else:
+        generator = AgenticReviewAdapter()
     pr_cfg = PRReviewConfig(
         review_depth=review_depth,
         custom_guidelines=guidelines,

@@ -8,4 +8,7 @@ class MODELS(StrEnum):
     GPT_5_MINI_2025_08_07 = "openai/gpt-5-mini-2025-08-07"
     GPT_5_2025_08_07 = "openai/gpt-5-2025-08-07"
     GPT_5_1_2025_11_13 = "openai/gpt-5.1-2025-11-13"
+    GPT_5_2_2025_12_11 = "openai/gpt-5.2-2025-12-11"
+    GPT_5_2_CODEX = "openai/gpt-5.2-codex"
+    GPT_5_1_CODEX_MINI = "openai/gpt-5.1-codex-mini"
     GPT_4_0613 = "openai/gpt-4-0613"

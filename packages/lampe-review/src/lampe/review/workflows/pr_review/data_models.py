@@ -1,10 +1,17 @@
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 from lampe.core.data_models import PullRequest, Repository
 from lampe.core.workflows.function_calling_agent import ToolSource
+
+
+class LightweightToolSource(BaseModel):
+    """Lightweight version of ToolSource without tool_output for aggregation."""
+
+    tool_name: str = Field(..., description="Name of the tool that was called")
+    tool_kwargs: dict[str, Any] = Field(..., description="Arguments passed to the tool")
 
 
 class AgentResponseModel(BaseModel):
@@ -37,6 +44,10 @@ class ReviewComment(BaseModel):
     severity: str = Field(..., description="Severity level: critical, high, medium, low")
     category: str = Field(..., description="Category of the issue (e.g., security, performance, quality)")
     agent_name: str = Field(..., description="Name of the agent that found this issue")
+    muted: bool = Field(default=False, description="Whether this issue was muted during aggregation")
+    mute_reason: Optional[str] = Field(
+        default=None, description="Reason why this issue was muted (e.g. duplicate, hallucination)"
+    )
 
 
 class FileReview(BaseModel):
@@ -49,6 +60,17 @@ class FileReview(BaseModel):
     )
     summary: str = Field(..., description="Overall summary of the file review")
     agent_name: Optional[str] = Field(default=None, description="Name of the agent that performed this review")
+    muted_line_numbers: set[str] = Field(
+        default_factory=set, description="Line numbers with muted comments (for line_comments)"
+    )
+    muted_line_reasons: dict[str, str] = Field(
+        default_factory=dict, description="Line number to mute reason (for line_comments)"
+    )
+
+    @field_serializer("muted_line_numbers")
+    def _serialize_muted_line_numbers(self, value: set[str]) -> list[str]:
+        """Serialize set to sorted list for JSON compatibility."""
+        return sorted(value)
 
 
 class AgentReviewInput(BaseModel):
@@ -72,6 +94,20 @@ class AgentReviewOutput(BaseModel):
     reviews: list[FileReview] = Field(default_factory=list, description="File reviews from this agent")
     sources: list[ToolSource] = Field(default_factory=list, description="Sources from this agent")
     summary: str = Field(..., description="Overall summary from this agent")
+
+    def to_lightweight_dict(self) -> dict[str, Any]:
+        """Convert to dictionary with lightweight sources for aggregation."""
+        lightweight_sources = [
+            LightweightToolSource(tool_name=source.tool_name, tool_kwargs=source.tool_kwargs).model_dump()
+            for source in self.sources
+        ]
+        return {
+            "agent_name": self.agent_name,
+            "focus_areas": self.focus_areas,
+            "reviews": [review.model_dump() for review in self.reviews],
+            "sources": lightweight_sources,
+            "summary": self.summary,
+        }
 
 
 class PRReviewInput(BaseModel):

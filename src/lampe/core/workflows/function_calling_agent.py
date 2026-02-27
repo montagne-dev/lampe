@@ -48,10 +48,11 @@ class FunctionCallingAgent(Workflow):
         llm: FunctionCallingLLM | None = None,
         tools: list[FunctionTool] | None = None,
         system_prompt: str | None = None,
+        max_iterations: int = 50,
         **kwargs: Any,
     ) -> None:
         self.logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
-        self.logger.info("Initializing FunctionCallingAgent with args: %s, kwargs: %s", args, kwargs)
+        self.logger.info(f"Initializing FunctionCallingAgent with args: {args}, kwargs: {kwargs}")
         super().__init__(*args, **kwargs)
         self.tools = tools or []
         self.llm = llm or LiteLLM(
@@ -60,6 +61,7 @@ class FunctionCallingAgent(Workflow):
         assert self.llm.metadata.is_function_calling_model
         # Store system prompt
         self.system_prompt = system_prompt
+        self.max_iterations = max_iterations
 
     def update_tools(self, partial_params: dict[str, Any] | None = None) -> None:
         """
@@ -90,6 +92,8 @@ class FunctionCallingAgent(Workflow):
     async def prepare_chat_history(self, ctx: Context, ev: UserInputEvent) -> InputEvent:
         # Clear sources
         await ctx.store.set("sources", [])
+        # Initialize iteration counter
+        await ctx.store.set("iteration_count", 0)
 
         # Check if memory is setup
         memory = await ctx.store.get("memory", default=None)
@@ -137,7 +141,24 @@ class FunctionCallingAgent(Workflow):
         return StopEvent(result=ev)
 
     @step
-    async def handle_tool_calls(self, ctx: Context, ev: ToolCallEvent) -> InputEvent:
+    async def handle_tool_calls(self, ctx: Context, ev: ToolCallEvent) -> InputEvent | AgentCompleteEvent:
+        # Increment iteration counter
+        iteration_count = await ctx.store.get("iteration_count", default=0)
+        iteration_count += 1
+        await ctx.store.set("iteration_count", iteration_count)
+
+        # Check if max iterations exceeded
+        if iteration_count > self.max_iterations:
+            self.logger.warning(
+                f"Max iterations ({self.max_iterations}) exceeded. Stopping agent to prevent infinite loop."
+            )
+            sources = await ctx.store.get("sources", default=[])
+            error_msg = (
+                f"Agent stopped: Maximum number of iterations ({self.max_iterations}) exceeded. "
+                "This may indicate an infinite loop in tool calling."
+            )
+            return AgentCompleteEvent(output=error_msg, sources=sources)
+
         tool_calls = ev.tool_calls
         tools_by_name = {tool.metadata.get_name(): tool for tool in self.tools}
         tool_msgs = []
@@ -163,15 +184,17 @@ class FunctionCallingAgent(Workflow):
                     if key in tool.partial_params:
                         self.logger.info(f"Tool {tool_call.tool_name} partial param {key} value {value}")
 
+                ctx_param_name = getattr(tool, "ctx_param_name", None)
+                if getattr(tool, "requires_context", False) and ctx_param_name is not None:
+                    tool_call.tool_kwargs[ctx_param_name] = ctx
                 self.logger.info(f"-------------- {tool_call.tool_name} ------------------")
                 self.logger.info(f"kwargs {tool_call.tool_kwargs}")
-                tool_output = tool(**tool_call.tool_kwargs)
+                result = await tool.acall(**tool_call.tool_kwargs)
+                tool_output = result.content if hasattr(result, "content") else str(result)
                 self.logger.info(f"Tool output:\n {tool_output}")
                 self.logger.info("--------------------------------")
 
-                tool_msgs.append(
-                    ChatMessage(role="tool", content=tool_output.content, additional_kwargs=additional_kwargs)
-                )
+                tool_msgs.append(ChatMessage(role="tool", content=tool_output, additional_kwargs=additional_kwargs))
             except Exception as e:
                 tool_output = f"Encountered error in tool call: \n{e}"
                 tool_msgs.append(ChatMessage(role="tool", content=tool_output, additional_kwargs=additional_kwargs))
