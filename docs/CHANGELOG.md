@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v0.6.1 (2026-02-27)
+### Continuous integration
+
+* ci: release missing uv.lock v2 ([`7c34655`](https://github.com/montagne-dev/lampe/commit/7c34655511a227d9c29a4620d932e91d6a845d81))
+* ci: release missing uv.lock (#14) ([`dff2a71`](https://github.com/montagne-dev/lampe/commit/dff2a71a1f7433d52a758b2030c46902b54b6f62))### Unknown
+
+* hotfix: ci is broken due to missing curl ([`7106825`](https://github.com/montagne-dev/lampe/commit/71068255aca6ce762a1123fa9946039aaece7f36))
 ## v0.6.0 (2026-02-27)
 ### Features
 
