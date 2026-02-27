@@ -1,6 +1,10 @@
 # CHANGELOG
 
 
+## v0.5.1 (2026-02-27)
+### Refactoring
+
+* refactor: cleanup all the initial agents for review to keep only agentic skill.md reviewer (#10) ([`66157cf`](https://github.com/montagne-dev/lampe/commit/66157cf80e537391a550719f572713055d834a0c))
 ## v0.5.0 (2026-02-27)
 ### Features
 
