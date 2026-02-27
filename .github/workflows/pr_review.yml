@@ -2,6 +2,7 @@ name: review pull request
 
 on:
   pull_request:
+    types: [opened]
 
 jobs:
   review:
@@ -18,6 +19,6 @@ jobs:
       - uses: ./ # Use local action for testing
         with:
           command: review
-          variant: quick
+          variant: agentic
           review_depth: standard
           files_exclude: "uv.lock"
