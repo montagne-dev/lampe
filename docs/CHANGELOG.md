@@ -1,6 +1,10 @@
 # CHANGELOG
 
 
+## v0.5.0 (2026-02-27)
+### Features
+
+* feat: review is now using SKILL.md (#9) ([`10f5ef6`](https://github.com/montagne-dev/lampe/commit/10f5ef61b8bb7769de52e452e81800faac190c84))
 ## v0.4.1 (2026-02-21)
 ### Documentation
 
