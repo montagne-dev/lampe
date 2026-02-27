@@ -1,11 +1,17 @@
 # CHANGELOG
 
 
+## v0.6.2 (2026-02-27)
+### Hotfix
+
+* hotfix: allow hotfix to trigger release ([`6b7eee7`](https://github.com/montagne-dev/lampe/commit/6b7eee7c7823539c6b517917bc6b3784fd3b478c))
+* hotfix: make sure it ran ([`d329cec`](https://github.com/montagne-dev/lampe/commit/d329cec19b1584a8c138ce8952f80db07691c63f))
+* hotfix: Uv should exists in ci ([`7409724`](https://github.com/montagne-dev/lampe/commit/740972482a428a143b281687a3bf33c35dbc28d6))
 ## v0.6.1 (2026-02-27)
 ### Continuous integration
 
 * ci: release missing uv.lock v2 ([`7c34655`](https://github.com/montagne-dev/lampe/commit/7c34655511a227d9c29a4620d932e91d6a845d81))
-* ci: release missing uv.lock (#14) ([`dff2a71`](https://github.com/montagne-dev/lampe/commit/dff2a71a1f7433d52a758b2030c46902b54b6f62))### Unknown
+* ci: release missing uv.lock (#14) ([`dff2a71`](https://github.com/montagne-dev/lampe/commit/dff2a71a1f7433d52a758b2030c46902b54b6f62))### Hotfix
 
 * hotfix: ci is broken due to missing curl ([`7106825`](https://github.com/montagne-dev/lampe/commit/71068255aca6ce762a1123fa9946039aaece7f36))
 ## v0.6.0 (2026-02-27)
