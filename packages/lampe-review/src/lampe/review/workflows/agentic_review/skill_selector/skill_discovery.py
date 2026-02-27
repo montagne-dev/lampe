@@ -1,9 +1,24 @@
-"""Discover SKILL.md files in conventional locations within the reviewed repository."""
+"""Discover SKILL.md files within the reviewed repository."""
 
 import re
 from pathlib import Path
 
 from pydantic import BaseModel, Field
+
+# Directories to skip when scanning for skills (e.g. deps, build artifacts)
+_SKIP_DIRS = frozenset({".git", "node_modules", "__pycache__", ".venv", "venv", ".tox", "dist", "build"})
+
+
+def _should_skip(path: Path, repo_root: Path) -> bool:
+    """Return True if path is under a directory we should skip."""
+    try:
+        rel = path.relative_to(repo_root)
+    except ValueError:
+        return True
+    for part in rel.parts:
+        if part in _SKIP_DIRS:
+            return True
+    return False
 
 
 class SkillInfo(BaseModel):
@@ -36,49 +51,47 @@ def _parse_frontmatter(content: str) -> tuple[dict[str, str], str]:
 
 
 def discover_skills(repo_path: str) -> list[SkillInfo]:
-    """Find all SKILL.md files in conventional locations.
+    """Find all SKILL.md files in the repository.
 
-    Scans:
-    - {repo_path}/.cursor/skills/*/SKILL.md
-    - {repo_path}/.lampe/skills/*/SKILL.md
+    Scans for any SKILL.md file under the repo root.
+    Skips directories: .git, node_modules, __pycache__, .venv, venv, .tox, dist, build.
 
     Returns:
         List of SkillInfo with path, name, description, and full content.
     """
-    base = Path(repo_path)
-    locations = [
-        base / ".cursor" / "skills",
-        base / ".lampe" / "skills",
-    ]
+    base = Path(repo_path).resolve()
+    if not base.exists() or not base.is_dir():
+        return []
 
     skills: list[SkillInfo] = []
-    for base_dir in locations:
-        if not base_dir.exists() or not base_dir.is_dir():
+    seen_paths: set[Path] = set()
+
+    for skill_file in base.rglob("SKILL.md"):
+        if not skill_file.is_file():
+            continue
+        if skill_file in seen_paths:
+            continue
+        if _should_skip(skill_file, base):
             continue
 
-        for skill_dir in base_dir.iterdir():
-            if not skill_dir.is_dir():
-                continue
+        seen_paths.add(skill_file)
 
-            skill_file = skill_dir / "SKILL.md"
-            if not skill_file.exists():
-                continue
+        try:
+            content = skill_file.read_text(encoding="utf-8")
+        except Exception:
+            continue
 
-            try:
-                content = skill_file.read_text(encoding="utf-8")
-            except Exception:
-                continue
+        metadata, _ = _parse_frontmatter(content)
+        skill_dir = skill_file.parent
+        name = metadata.get("name", skill_dir.name)
+        description = metadata.get("description", "")
 
-            metadata, _ = _parse_frontmatter(content)
-            name = metadata.get("name", skill_dir.name)
-            description = metadata.get("description", "")
-
-            skills.append(
-                SkillInfo(
-                    path=str(skill_file),
-                    name=name,
-                    description=description,
-                    content=content,
-                )
+        skills.append(
+            SkillInfo(
+                path=str(skill_file),
+                name=name,
+                description=description,
+                content=content,
             )
+        )
     return skills

@@ -53,6 +53,36 @@ Guidelines...
     assert result[0].name == "django-data"
 
 
+def test_discover_skills_finds_any_skill_md(tmp_path):
+    """Discover any SKILL.md file, not only under skills/ subdir."""
+    skill_dir = tmp_path / "docs" / "guidelines"
+    skill_dir.mkdir(parents=True)
+    skill_file = skill_dir / "SKILL.md"
+    skill_file.write_text(
+        """---
+name: custom-review
+description: Custom review guidelines from docs
+---
+
+# Custom
+Guidelines here.
+"""
+    )
+    result = discover_skills(str(tmp_path))
+    assert len(result) == 1
+    assert result[0].name == "custom-review"
+    assert result[0].description == "Custom review guidelines from docs"
+
+
+def test_discover_skills_skips_git_dir(tmp_path):
+    """Do not discover SKILL.md inside .git."""
+    skill_dir = tmp_path / ".git" / "skills" / "hidden"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text("---\nname: hidden\n---\n")
+    result = discover_skills(str(tmp_path))
+    assert len(result) == 0
+
+
 def test_discover_skills_multiple(tmp_path):
     """Discover multiple skills from both locations."""
     (tmp_path / ".cursor" / "skills" / "skill-a").mkdir(parents=True)

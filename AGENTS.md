@@ -83,3 +83,48 @@ class AgentClass(Workflow):
 - Use the multi-agent pipeline for comprehensive reviews
 - Maintain separation between prompt content and business logic
 - Follow the established pattern for prompt file organization
+
+## Agentic Review Workflow
+
+The **agentic** variant (`--variant agentic`) uses an orchestrator that:
+
+1. **Extracts PR intent** from title, description, and diff
+2. **Discovers skills** — any `SKILL.md` file in the repo (e.g. `.cursor/skills/`, `docs/`, `guidelines/`)
+3. **Selects applicable skills** (only when skills exist) based on PR intent
+4. **Plans validation tasks** — orchestrator formulates concrete validation questions for basic agents; skills define tasks for skill-augmented agents
+5. **Spawns validation agents** (basic or skill-augmented) to verify each task
+6. **Aggregates and QA** — deduplicates, prioritizes, selects top feedback
+
+### Review Variants
+
+| Variant | Description |
+|---------|-------------|
+| `multi-agent` | Fixed specialized agents (DefaultAgent, DesignPatternAgent, etc.) |
+| `diff-by-diff` | One DiffFocusedAgent per changed file, runs in parallel |
+| `agentic` | Orchestrator + validation agents + skills (SKILL.md from repo) |
+
+### Skills for Agentic Review
+
+Repositories can add **skills** that guide validation. Place `SKILL.md` files anywhere in the repo:
+
+- `.cursor/skills/<skill-name>/SKILL.md`
+- `.lampe/skills/<skill-name>/SKILL.md`
+- `docs/guidelines/SKILL.md` (or any other path)
+
+**SKILL.md format** (Cursor-style):
+
+```markdown
+---
+name: django-data-management
+description: Guidelines for Django models, migrations, and data handling. Use when reviewing changes to models.py, migrations, or data-related code.
+---
+
+# Django Data Management
+
+## Review Checklist
+- Migrations are reversible when possible
+- No raw SQL without proper escaping
+- Use select_related/prefetch_related for N+1 avoidance
+```
+
+The Skill Selector Agent picks which skills apply to each PR. Skill-augmented validation agents receive the skill content in their prompt.
