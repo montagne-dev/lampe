@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+from urllib.parse import quote
 
 from github import Auth, Github, GithubIntegration
 
@@ -11,6 +12,32 @@ from lampe.core.data_models.repository import Repository
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
 
 logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
+
+# Severity colors for shields.io badges
+_SEVERITY_COLORS: dict[str, str] = {
+    "critical": "e74c3c",
+    "high": "f39c12",
+    "medium": "f1c40f",
+    "low": "2ecc71",
+}
+_CATEGORY_COLOR = "3498db"
+
+
+def _badge_shield(label: str, message: str, color: str) -> str:
+    """Build a shields.io-style badge markdown image."""
+    encoded_label = quote(label, safe="")
+    encoded_message = quote(message, safe="")
+    url = f"https://img.shields.io/badge/{encoded_label}-{encoded_message}-{color}"
+    return f"![{label}]({url})"
+
+
+def _format_structured_comment_badges(severity: str, category: str) -> str:
+    """Build severity and category badges for a structured comment."""
+    sev = severity.lower()
+    color = _SEVERITY_COLORS.get(sev, _CATEGORY_COLOR)
+    severity_badge = _badge_shield("severity", severity, color)
+    category_badge = _badge_shield("category", category, _CATEGORY_COLOR)
+    return f"{severity_badge} {category_badge}"
 
 
 class GitHubProvider(Provider):
@@ -191,9 +218,11 @@ class GitHubProvider(Provider):
                         for sc in file_review.structured_comments:
                             if getattr(sc, "muted", False):
                                 continue
+                            badges = _format_structured_comment_badges(sc.severity, sc.category)
+                            comment_body = f"## 🔦🐛\n\n{badges}\n\n{sc.comment}"
                             try:
                                 pull_request.create_review_comment(
-                                    body=f"## 🔦🐛 [{sc.severity}] {sc.comment}",
+                                    body=comment_body,
                                     commit=pull_request.head.sha,
                                     path=file_review.file_path,
                                     line=sc.line_number,
@@ -203,7 +232,7 @@ class GitHubProvider(Provider):
                                     f"Failed to post comment for {file_review.file_path}:{sc.line_number}: {e}"
                                 )
                                 pull_request.create_issue_comment(
-                                    f"**{file_review.file_path} (Line {sc.line_number}):** {sc.comment}"
+                                    f"**{file_review.file_path} (Line {sc.line_number}):**\n\n" f"{comment_body}"
                                 )
 
                     # Post summary comment if no inline comments were posted

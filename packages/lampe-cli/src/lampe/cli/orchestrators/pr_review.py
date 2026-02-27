@@ -9,6 +9,7 @@ from lampe.cli.providers.base import Provider, PRReviewPayload
 from lampe.core.data_models import PullRequest, Repository
 from lampe.review.workflows.agentic_review import AgenticReviewComplete, generate_agentic_pr_review
 from lampe.review.workflows.pr_review.data_models import AgentReviewOutput, ReviewDepth
+from lampe.review.workflows.quick_review import QuickReviewComplete, generate_quick_pr_review
 
 
 class PRReviewGenerator(Protocol):
@@ -21,7 +22,7 @@ class PRReviewGenerator(Protocol):
         files_exclude_patterns: list[str] | None = None,
         timeout: int | None = None,
         verbose: bool = False,
-    ) -> AgenticReviewComplete: ...
+    ) -> AgenticReviewComplete | QuickReviewComplete: ...
 
 
 @dataclass
@@ -52,6 +53,28 @@ class AgenticOrchestratorAdapter:
             review_depth=review_depth,
             custom_guidelines=custom_guidelines,
             files_exclude_patterns=files_exclude_patterns,
+            timeout=timeout,
+            verbose=verbose,
+        )
+        return result
+
+
+class QuickOrchestratorAdapter:
+    """Uses the quick review workflow (single agent, grep-first, Claude 4.5 with thinking)."""
+
+    async def generate(
+        self,
+        repository: Repository,
+        pull_request: PullRequest,
+        review_depth: ReviewDepth = ReviewDepth.STANDARD,
+        custom_guidelines: list[str] | None = None,
+        files_exclude_patterns: list[str] | None = None,
+        timeout: int | None = None,
+        verbose: bool = False,
+    ) -> QuickReviewComplete:
+        result = await generate_quick_pr_review(
+            repository=repository,
+            pull_request=pull_request,
             timeout=timeout,
             verbose=verbose,
         )

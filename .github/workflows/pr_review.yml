@@ -20,5 +20,5 @@ jobs:
         with:
           command: review
           variant: agentic
-          review_depth: comprehensive
+          review_depth: standard
           files_exclude: "uv.lock"
