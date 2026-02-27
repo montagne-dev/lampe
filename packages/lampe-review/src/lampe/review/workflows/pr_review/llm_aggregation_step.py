@@ -12,7 +12,7 @@ from workflows import Context as WorkflowContext
 from workflows import Workflow, step
 from workflows.events import StartEvent, StopEvent
 
-from lampe.core.llmconfig import MODELS
+from lampe.core.llmconfig import MODELS, get_model
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
 from lampe.review.workflows.pr_review.agents.mute_issue_aggregation_agent import (
     MuteIssueAggregationAgent,
@@ -158,7 +158,11 @@ class LLMAggregationWorkflow(Workflow):
         super().__init__(*args, timeout=timeout, verbose=verbose, **kwargs)
         self.verbose = verbose
         self.logger = logging.getLogger(name=LAMPE_LOGGER_NAME)
-        self.llm = llm or LiteLLM(model=MODELS.GPT_5_2025_08_07, temperature=1, reasoning_effort="low")
+        self.llm = llm or LiteLLM(
+            model=get_model("LAMPE_MODEL_REVIEW_AGGREGATION", MODELS.GPT_5_2025_08_07),
+            temperature=1,
+            reasoning_effort="low",
+        )
         self.max_tool_iterations = max_tool_iterations
         self._agent = MuteIssueAggregationAgent(
             llm=self.llm,

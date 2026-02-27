@@ -6,7 +6,7 @@ from llama_index.core.program import FunctionCallingProgram
 from llama_index.llms.litellm import LiteLLM
 from pydantic import BaseModel, Field
 
-from lampe.core.llmconfig import MODELS
+from lampe.core.llmconfig import MODELS, get_model
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
 from lampe.review.workflows.agentic_review.data_models import PRIntent
 from lampe.review.workflows.agentic_review.skill_selector.skill_discovery import SkillInfo
@@ -51,7 +51,7 @@ async def select_applicable_skills(
         return []
 
     logger = logging.getLogger(LAMPE_LOGGER_NAME)
-    _llm = llm or LiteLLM(model=MODELS.GPT_5_2_CODEX, temperature=1)
+    _llm = llm or LiteLLM(model=get_model("LAMPE_MODEL_REVIEW_INTENT", MODELS.GPT_5_2_CODEX), temperature=1)
 
     skills_list = "\n".join(f'- path: "{s.path}" | name: {s.name} | description: {s.description}' for s in skills)
 

@@ -444,6 +444,17 @@ When you trigger the manual pipeline, Bitbucket will prompt you to enter the fol
 | `OPENAI_API_KEY`    | OpenAI API key    | Yes                    |
 | `ANTHROPIC_API_KEY` | Anthropic API key | Yes (for agentic mode) |
 
+### Optional: Model Configuration
+
+Override models per workflow component. Use LiteLLM format: `provider/model-id`.
+
+| Variable                       | Default                      | Used By                                                  |
+| ------------------------------ | ---------------------------- | -------------------------------------------------------- |
+| `LAMPE_MODEL_DESCRIBE`         | `openai/gpt-5-nano-2025-08-07` | PR description                                           |
+| `LAMPE_MODEL_REVIEW_AGGREGATION` | `openai/gpt-5-2025-08-07`  | Review aggregation                                       |
+| `LAMPE_MODEL_REVIEW_INTENT`    | `openai/gpt-5.2-codex`      | Review: intent, skill selection, task planning           |
+| `LAMPE_MODEL_REVIEW_VALIDATION` | `openai/gpt-5.1-codex-mini` | Review validation agents                                 |
+
 ### Bitbucket Authentication (Choose One)
 
 #### Option 1: Repository/Workspace Access Token (Recommended)
