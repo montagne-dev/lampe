@@ -51,11 +51,11 @@ def healthcheck() -> None:
             model_value = os.getenv(env_var)
             if model_value and model_value.strip():
                 model_env_set = True
-                provider = provider_from_model(model_value)
-                if provider == "anthropic" and not anthropic_key:
+                llm_provider = provider_from_model(model_value)
+                if llm_provider == "anthropic" and not anthropic_key:
                     logger.info("❌ %s uses Anthropic but ANTHROPIC_API_KEY is not set", env_var)
                     sys.exit(1)
-                if provider == "openai" and not openai_key:
+                if llm_provider == "openai" and not openai_key:
                     logger.info("❌ %s uses OpenAI but OPENAI_API_KEY is not set", env_var)
                     sys.exit(1)
 
