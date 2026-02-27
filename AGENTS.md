@@ -79,9 +79,17 @@ class AgentClass(Workflow):
 
 ## Agent Workflow Guidelines
 
+- Each specialized agent should focus on one domain (security, performance, etc.)
+- Use the multi-agent pipeline for comprehensive reviews
+- Maintain separation between prompt content and business logic
+- Follow the established pattern for prompt file organization
 - Validation agents in the agentic workflow focus on specific verification tasks.
 - Maintain separation between prompt content and business logic.
 - Follow the established pattern for prompt file organization.
+
+## Model Configuration
+
+LLM models can be overridden via environment variables. Use `get_model(env_var, default)` from `lampe.core.llmconfig`. Env vars: `LAMPE_MODEL_DESCRIBE`, `LAMPE_MODEL_REVIEW_AGGREGATION`, `LAMPE_MODEL_REVIEW_INTENT`, `LAMPE_MODEL_REVIEW_VALIDATION`. The health check validates that configured models have the corresponding API key.
 
 ## Review Variants
 
@@ -117,6 +125,7 @@ description: Guidelines for Django models, migrations, and data handling. Use wh
 # Django Data Management
 
 ## Review Checklist
+
 - Migrations are reversible when possible
 - No raw SQL without proper escaping
 - Use select_related/prefetch_related for N+1 avoidance

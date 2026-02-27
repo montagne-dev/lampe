@@ -7,7 +7,7 @@ from llama_index.core.output_parsers import PydanticOutputParser
 from llama_index.core.workflow import Context, StartEvent, StopEvent, step
 from llama_index.llms.litellm import LiteLLM
 
-from lampe.core.llmconfig import MODELS
+from lampe.core.llmconfig import MODELS, get_model
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
 from lampe.core.tools.llm_integration import git_tools_gpt_5_nano_agent_prompt
 from lampe.core.workflows.function_calling_agent import (
@@ -46,7 +46,7 @@ class ValidationAgent(FunctionCallingAgent):
         system_prompt = VALIDATION_AGENT_BASE_SYSTEM_PROMPT
 
         llm = llm or LiteLLM(
-            model=MODELS.GPT_5_1_CODEX_MINI,
+            model=get_model("LAMPE_MODEL_REVIEW_VALIDATION", MODELS.GPT_5_1_CODEX_MINI),
             temperature=1.0,
             reasoning_effort="low",
         )

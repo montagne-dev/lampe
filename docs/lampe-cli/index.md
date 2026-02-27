@@ -54,10 +54,14 @@ pip install lampe-sdk
 
 You must set the following environment variables before running any CLI commands:
 
-| Variable            | Default | Purpose                             |
-| ------------------- | ------- | ----------------------------------- |
-| `OPENAI_API_KEY`    | `unset` | API key for OpenAI LLM provider.    |
-| `ANTHROPIC_API_KEY` | `unset` | API key for Anthropic LLM provider. |
+| Variable                         | Default | Purpose                                |
+| -------------------------------- | ------- | -------------------------------------- |
+| `OPENAI_API_KEY`                 | `unset` | API key for OpenAI LLM provider.       |
+| `ANTHROPIC_API_KEY`              | `unset` | API key for Anthropic LLM provider.    |
+| `LAMPE_MODEL_DESCRIBE`           | (auto)  | Model for PR description (optional).    |
+| `LAMPE_MODEL_REVIEW_AGGREGATION` | (auto)  | Model for review aggregation (optional). |
+| `LAMPE_MODEL_REVIEW_INTENT`      | (auto)  | Model for intent/skill/task (optional). |
+| `LAMPE_MODEL_REVIEW_VALIDATION`  | (auto)  | Model for validation agents (optional). |
 
 Example `.env`:
 

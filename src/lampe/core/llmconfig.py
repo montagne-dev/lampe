@@ -1,3 +1,4 @@
+import os
 from enum import StrEnum
 
 
@@ -12,3 +13,18 @@ class MODELS(StrEnum):
     GPT_5_2_CODEX = "openai/gpt-5.2-codex"
     GPT_5_1_CODEX_MINI = "openai/gpt-5.1-codex-mini"
     GPT_4_0613 = "openai/gpt-4-0613"
+
+
+def get_model(env_var: str, default: str) -> str:
+    """Return model from env var or default. For use with LAMPE_MODEL_* variables."""
+    return os.getenv(env_var) or default
+
+
+def provider_from_model(model: str) -> str | None:
+    """Extract provider from LiteLLM model string (e.g. anthropic/claude-..., openai/gpt-...)."""
+    m = model.lower()
+    if "anthropic" in m:
+        return "anthropic"
+    if "openai" in m:
+        return "openai"
+    return None

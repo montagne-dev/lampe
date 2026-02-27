@@ -5,7 +5,7 @@ from llama_index.core.workflow import Event, StartEvent, StopEvent, Workflow, st
 from llama_index.llms.litellm import LiteLLM
 
 from lampe.core.data_models import PullRequest, Repository
-from lampe.core.llmconfig import MODELS
+from lampe.core.llmconfig import MODELS, get_model
 from lampe.core.parsers.markdown_code_block_remover_output import MarkdownCodeBlockRemoverOutputParser
 from lampe.core.tools.repository import clone_repo, get_diff_between_commits
 from lampe.core.utils.token import truncate_to_token_limit
@@ -46,7 +46,7 @@ class PRDescriptionWorkflow(Workflow):
 
     def __init__(self, truncation_tokens=MAX_TOKENS, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.llm = LiteLLM(model=MODELS.GPT_5_NANO_2025_08_07, temperature=1.0)
+        self.llm = LiteLLM(model=get_model("LAMPE_MODEL_DESCRIBE", MODELS.GPT_5_NANO_2025_08_07), temperature=1.0)
         self.truncation_tokens = truncation_tokens
         self.output_parser = MarkdownCodeBlockRemoverOutputParser()
 

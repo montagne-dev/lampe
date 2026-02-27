@@ -10,7 +10,7 @@ from workflows import Context, Workflow, step
 from workflows.events import Event, StartEvent, StopEvent
 
 from lampe.core.data_models import PullRequest, Repository
-from lampe.core.llmconfig import MODELS
+from lampe.core.llmconfig import MODELS, get_model
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
 from lampe.core.tools.repository.diff import list_changed_files
 from lampe.review.workflows.agentic_review.agentic_review_prompt import (
@@ -174,7 +174,7 @@ class AgenticReviewWorkflow(Workflow):
         )
 
         # Intent extraction (FunctionCallingProgram for structured output)
-        llm = LiteLLM(model=MODELS.GPT_5_2_CODEX, temperature=1)
+        llm = LiteLLM(model=get_model("LAMPE_MODEL_REVIEW_INTENT", MODELS.GPT_5_2_CODEX), temperature=1)
         intent_prompt = f"{INTENT_EXTRACTION_SYSTEM_PROMPT}\n\n{INTENT_EXTRACTION_USER_PROMPT}"
         try:
             intent_program = FunctionCallingProgram.from_defaults(

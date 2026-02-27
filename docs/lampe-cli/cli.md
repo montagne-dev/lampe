@@ -315,6 +315,24 @@ This command checks:
 - `LAMPE_GITHUB_APP_ID`: GitHub App ID
 - `LAMPE_GITHUB_APP_PRIVATE_KEY`: GitHub App private key
 
+### Optional (Model Configuration)
+
+Override the LLM model for each workflow component. Use LiteLLM format: `provider/model-id` (e.g. `anthropic/claude-3-5-sonnet-20241022`, `openai/gpt-5-2025-08-07`). When set, the health check validates that the corresponding API key is configured.
+
+| Variable                       | Default                      | Used By                                                      |
+| ------------------------------ | ---------------------------- | ------------------------------------------------------------ |
+| `LAMPE_MODEL_DESCRIBE`         | `openai/gpt-5-nano-2025-08-07` | PR description workflow                                      |
+| `LAMPE_MODEL_REVIEW_AGGREGATION` | `openai/gpt-5-2025-08-07`  | Review: LLM aggregation step (deduplication, muting)          |
+| `LAMPE_MODEL_REVIEW_INTENT`    | `openai/gpt-5.2-codex`      | Review: intent extraction, skill selection, task planning     |
+| `LAMPE_MODEL_REVIEW_VALIDATION` | `openai/gpt-5.1-codex-mini` | Review: validation agents                                    |
+
+Example: use Anthropic for validation only:
+
+```sh
+export LAMPE_MODEL_REVIEW_VALIDATION="anthropic/claude-3-5-sonnet-20241022"
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
 ### Optional (for configuration)
 
 Set these to override defaults:
