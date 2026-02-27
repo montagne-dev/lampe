@@ -10,6 +10,7 @@ from lampe.cli.orchestrators.pr_review import (
     PRReviewConfig,
     PRReviewOrchestratorWorkflow,
     PRReviewStart,
+    QuickOrchestratorAdapter,
 )
 from lampe.cli.providers.base import Provider
 from lampe.core import initialize
@@ -27,7 +28,7 @@ def review(
     review_depth: ReviewDepth = typer.Option(ReviewDepth.STANDARD, help="Review depth (basic|standard|comprehensive)"),
     variant: str = typer.Option(
         "agentic",
-        help="Review variant (agentic for now; additional variants may be added later)",
+        help="Review variant: agentic (full) or quick (only critical and high issues)",
     ),
     guidelines: list[str] | None = typer.Option(None, "--guideline", help="Custom review guidelines (can be repeated)"),
     files_exclude: list[str] | None = typer.Option(None, "--exclude"),
@@ -57,6 +58,8 @@ def review(
 
     if variant == "agentic":
         generator = AgenticOrchestratorAdapter()
+    elif variant == "quick":
+        generator = QuickOrchestratorAdapter()
     else:
         typer.echo(f"Unknown review variant '{variant}'; using agentic.", err=True)
         generator = AgenticOrchestratorAdapter()

@@ -106,3 +106,55 @@ Behavioral guidance:
 - Use this tool when you need to locate files matching specific patterns or extensions.
 - The pattern matching uses git's pathspec syntax for flexible file path matching.
 """  # noqa: E501
+
+
+# Quick review: context-window-aware descriptions
+
+QUICK_REVIEW_GET_DIFF_DESCRIPTION = """
+Gets the diff for SPECIFIC files only. CRITICAL: Always pass file_paths with ONE file (or at most 2). Never omit file_paths — that returns the whole PR diff and blows the context window.
+
+Parameters:
+- base_reference (string): Base commit (pre-filled)
+- head_reference (string): Head commit (pre-filled)
+- file_paths (list[string]): REQUIRED. List of exactly 1 file path. E.g. ["src/foo.py"]. Never pass empty or omit — picking one file at a time is essential.
+- repo_path (string): Repo path (pre-filled)
+
+Behavioral guidance:
+- Use this to understand the NATURE of changes in a file. Essential for knowing what the change intends.
+- ONE file per call. Pick the most important file first (e.g. core logic, security-sensitive, config).
+- After reading a diff, use search_in_files or get_file_content_at_commit to investigate specific concerns.
+- Do NOT fetch diffs for all files. Be strategic: get enough to understand the PR purpose, then investigate.
+"""  # noqa: E501
+
+QUICK_REVIEW_SEARCH_IN_FILES_DESCRIPTION = """
+Searches for a pattern in files using git grep at a specific commit. Primary tool for quick review.
+
+Parameters:
+- pattern (string): Pattern to search (supports regex)
+- relative_dir_path (string): Directory to search (e.g. "src/", "." for repo root)
+- commit_reference (string): Commit to search at (head commit)
+- include_line_numbers (bool): True — use for quick review to get line numbers for targeted reads
+- repo_path (string): Repo path (pre-filled)
+
+Behavioral guidance:
+- Use this FIRST to find relevant code before reading. Grep is lightweight.
+- Search in directories of changed files only.
+- Use line numbers from results to call get_file_content_at_commit with line_start/line_end.
+"""  # noqa: E501
+
+QUICK_REVIEW_GET_FILE_CONTENT_DESCRIPTION = """
+Gets file content at a commit. CRITICAL: For files >300KB you MUST pass line_start and line_end. For quick review, ALWAYS use line ranges (max ~40 lines per read).
+
+Parameters:
+- commit_hash (string): Commit reference (head commit)
+- file_path (string): File path within repo
+- line_start (int, optional): 0-based start line — use for targeted reads
+- line_end (int, optional): 0-based end line — keep range small (~20-40 lines)
+- include_line_numbers (bool): True for readability
+- repo_path (string): Repo path (pre-filled)
+
+Behavioral guidance:
+- ALWAYS use line_start and line_end. Never read full files.
+- Get line numbers from search_in_files first, then read a small window.
+- Large files without line range will return an error.
+"""  # noqa: E501

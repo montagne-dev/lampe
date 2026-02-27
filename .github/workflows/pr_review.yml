@@ -19,6 +19,6 @@ jobs:
       - uses: ./ # Use local action for testing
         with:
           command: review
-          variant: agentic
-          review_depth: comprehensive
+          variant: quick
+          review_depth: basic
           files_exclude: "uv.lock"
