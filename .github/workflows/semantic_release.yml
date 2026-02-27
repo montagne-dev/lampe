@@ -25,16 +25,18 @@ jobs:
           ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
       - name: Configure Git
         run: |
           git config --global user.name "${{ vars.CICD_USERNAME }}"
           git config --global user.email "${{ vars.CICD_EMAIL }}"
+      - name: Install dependencies
+        run: uv sync --group dev
       - name: Python Semantic Release
-        uses: python-semantic-release/python-semantic-release@master
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GIT_COMMIT_AUTHOR: ${{ vars.CICD_USERNAME }} <${{ vars.CICD_EMAIL }}>
-        with:
-          github_token: ${{ steps.app-token.outputs.token }}
-          git_committer_name: ${{ vars.CICD_USERNAME }}
-          git_committer_email: ${{ vars.CICD_EMAIL }}
+          GIT_COMMITTER_NAME: ${{ vars.CICD_USERNAME }}
+          GIT_COMMITTER_EMAIL: ${{ vars.CICD_EMAIL }}
+        run: uv run semantic-release -v version
