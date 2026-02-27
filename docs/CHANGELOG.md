@@ -1,6 +1,10 @@
 # CHANGELOG
 
 
+## v0.6.0 (2026-02-27)
+### Features
+
+* feat: Add model configuration support (#11) ([`4c27db2`](https://github.com/montagne-dev/lampe/commit/4c27db2571d9bdbe934d06e69f636c39ed6a80f2))
 ## v0.5.1 (2026-02-27)
 ### Refactoring
 
