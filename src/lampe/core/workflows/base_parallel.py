@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any
+from typing import Any, Sequence
 
 from llama_index.core.workflow import Context, Event, StartEvent, StopEvent, Workflow, step
 from pydantic import BaseModel
@@ -22,19 +22,21 @@ class FailedInnerEvent(BaseModel):
 class ParallelStartEvent(StartEvent):
     """Start event that accepts inner inputs to process in parallel."""
 
-    inner_events: list[Event]
+    inner_events: Sequence[StartEvent]
 
 
 class ProcessInnerInputEvent(Event):
     """Event to process a single inner input."""
 
-    inner_event: Event
+    inner_event: StartEvent
+    index: int = 0
 
 
 class InnerInputResultEvent(Event):
     """Event containing the result of processing an inner input."""
 
     result: Any
+    index: int = 0
 
 
 class BaseParallelWorkflow(Workflow):
@@ -59,8 +61,8 @@ class BaseParallelWorkflow(Workflow):
     async def start(self, ctx: Context, ev: ParallelStartEvent) -> ProcessInnerInputEvent | None:
         await ctx.store.set("num_to_collect", len(ev.inner_events))
         logger.debug(f"Starting parallel workflow with {len(ev.inner_events)} inner inputs")
-        for inner_event in ev.inner_events:
-            ctx.send_event(ProcessInnerInputEvent(inner_event=inner_event))
+        for index, inner_event in enumerate(ev.inner_events):
+            ctx.send_event(ProcessInnerInputEvent(inner_event=inner_event, index=index))
 
     @step(num_workers=PARALLEL_WORKFLOW_MAX_WORKERS)
     async def process_inner_event(self, ev: ProcessInnerInputEvent) -> InnerInputResultEvent:
@@ -71,13 +73,13 @@ class BaseParallelWorkflow(Workflow):
             result = await self.inner.run(start_event=ev.inner_event)
         except Exception as e:
             logger.exception(f"Error processing inner workflow: {e}")
-            return InnerInputResultEvent(result=FailedInnerEvent(event=ev.inner_event, error=str(e)))
+            return InnerInputResultEvent(result=FailedInnerEvent(event=ev.inner_event, error=str(e)), index=ev.index)
 
         logger.debug(
             f"Processed inner workflow ({inner_name}) for event type: {inner_event_name}, "
             f"result type: {type(result).__name__}"
         )
-        return InnerInputResultEvent(result=result)
+        return InnerInputResultEvent(result=result, index=ev.index)
 
     @step
     async def combine_results(self, ctx: Context, ev: InnerInputResultEvent) -> StopEvent | None:
@@ -88,5 +90,6 @@ class BaseParallelWorkflow(Workflow):
             return None
 
         logger.debug("Collected all results")
-        combined_results = [event.result for event in results]
+        sorted_results = sorted(results, key=lambda e: e.index)
+        combined_results = [event.result for event in sorted_results]
         return StopEvent(result=combined_results)

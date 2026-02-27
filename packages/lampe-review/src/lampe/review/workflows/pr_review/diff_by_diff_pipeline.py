@@ -141,9 +141,9 @@ class DiffByDiffPipelineWorkflow(Workflow):
             agent_start_events.append(SpecializedAgentStart(input=agent_input))
 
         # Run parallel workflow
-        # Cast to list[Event] since SpecializedAgentStart extends Event
-        inner_events: list[Event] = agent_start_events  # type: ignore[assignment]
-        parallel_results = await self.parallel_workflow.run(start_event=ParallelStartEvent(inner_events=inner_events))
+        parallel_results = await self.parallel_workflow.run(
+            start_event=ParallelStartEvent(inner_events=agent_start_events)
+        )
 
         # Extract results (filter out None for failed reviews)
         # parallel_results is a list of StopEvent results from the wrapper workflow
