@@ -19,6 +19,6 @@ jobs:
       - uses: ./ # Use local action for testing
         with:
           command: review
-          variant: diff-by-diff
+          variant: agentic
           review_depth: comprehensive
           files_exclude: "uv.lock"

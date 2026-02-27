@@ -14,26 +14,12 @@ class LightweightToolSource(BaseModel):
     tool_kwargs: dict[str, Any] = Field(..., description="Arguments passed to the tool")
 
 
-class AgentResponseModel(BaseModel):
-    """Pydantic model for agent JSON response parsing."""
-
-    reviews: list[dict[str, Any]] = Field(..., description="list of file reviews")
-    summary: str = Field(default="", description="Overall summary from the agent")
-
-
 class ReviewDepth(str, Enum):
     """Review depth levels for PR reviews."""
 
     BASIC = "basic"
     STANDARD = "standard"
     COMPREHENSIVE = "comprehensive"
-
-
-class ReviewType(str, Enum):
-    """Review strategy types for PR reviews."""
-
-    MULTI_AGENT = "multi-agent"
-    DIFF_BY_DIFF = "diff-by-diff"
 
 
 class ReviewComment(BaseModel):
@@ -71,19 +57,6 @@ class FileReview(BaseModel):
     def _serialize_muted_line_numbers(self, value: set[str]) -> list[str]:
         """Serialize set to sorted list for JSON compatibility."""
         return sorted(value)
-
-
-class AgentReviewInput(BaseModel):
-    """Input for individual specialized agents."""
-
-    repository: Repository
-    pull_request: PullRequest
-    files_changed: str = Field(..., description="Formatted string of changed files with stats")
-    review_depth: ReviewDepth = Field(default=ReviewDepth.STANDARD, description="Depth of review analysis")
-    custom_guidelines: Optional[list[str]] = Field(default=None, description="Custom review guidelines to focus on")
-    target_file_path: Optional[str] = Field(
-        default=None, description="Specific file path to focus on (for diff-focused agents)"
-    )
 
 
 class AgentReviewOutput(BaseModel):
@@ -124,7 +97,6 @@ class PRReviewInput(BaseModel):
     files_reinclude_patterns: Optional[list[str]] = Field(
         default=None, description="File patterns to reinclude after exclusion"
     )
-    use_multi_agent: bool = Field(default=True, description="Whether to use multi-agent pipeline or single agent")
 
 
 class PRReivewAggregatorOutput(BaseModel):

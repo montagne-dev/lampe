@@ -494,7 +494,7 @@ The `lampe review` command supports automatic model selection based on review de
 - lampe review --repo . --base $MERGE_BASE --head $BITBUCKET_COMMIT --title "$BITBUCKET_PR_TITLE" --output bitbucket --review-depth comprehensive
 
 # Quick review with basic depth
-- lampe review --repo . --base $MERGE_BASE --head $BITBUCKET_COMMIT --title "$BITBUCKET_PR_TITLE" --output bitbucket --review-depth basic --variant diff-by-diff
+- lampe review --repo . --base $MERGE_BASE --head $BITBUCKET_COMMIT --title "$BITBUCKET_PR_TITLE" --output bitbucket --review-depth basic --variant agentic
 ```
 
 ## Output Providers

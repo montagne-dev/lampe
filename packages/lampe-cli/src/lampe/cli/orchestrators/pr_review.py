@@ -7,11 +7,8 @@ from llama_index.core.workflow import Event, StartEvent, StopEvent, Workflow, st
 
 from lampe.cli.providers.base import Provider, PRReviewPayload
 from lampe.core.data_models import PullRequest, Repository
-from lampe.review.workflows.agentic_review import generate_agentic_pr_review
-from lampe.review.workflows.pr_review.agents.specialized_agent_base import SpecializedReviewAgent
+from lampe.review.workflows.agentic_review import AgenticReviewComplete, generate_agentic_pr_review
 from lampe.review.workflows.pr_review.data_models import AgentReviewOutput, ReviewDepth
-from lampe.review.workflows.pr_review.diff_by_diff_pipeline import generate_diff_by_diff_pr_review
-from lampe.review.workflows.pr_review.multi_agent_pipeline import PRReviewComplete, generate_multi_agent_pr_review
 
 
 class PRReviewGenerator(Protocol):
@@ -22,52 +19,22 @@ class PRReviewGenerator(Protocol):
         review_depth: ReviewDepth = ReviewDepth.STANDARD,
         custom_guidelines: list[str] | None = None,
         files_exclude_patterns: list[str] | None = None,
-        agents_required: list[type[SpecializedReviewAgent]] | None = None,
         timeout: int | None = None,
         verbose: bool = False,
-    ) -> PRReviewComplete:  # expects .reviews
-        ...
+    ) -> AgenticReviewComplete: ...
 
 
 @dataclass
 class PRReviewConfig:
     review_depth: ReviewDepth = ReviewDepth.STANDARD
     custom_guidelines: list[str] | None = None
-    agents_required: list[type[SpecializedReviewAgent]] | None = None
     files_exclude_patterns: list[str] | None = None
     timeout: int | None = None
     verbose: bool = False
 
 
-class AgenticReviewAdapter:
-    """Uses the multi-agent pipeline (fixed specialized agents)."""
-
-    async def generate(
-        self,
-        repository: Repository,
-        pull_request: PullRequest,
-        review_depth: ReviewDepth = ReviewDepth.STANDARD,
-        custom_guidelines: list[str] | None = None,
-        files_exclude_patterns: list[str] | None = None,
-        agents_required: list[type[SpecializedReviewAgent]] | None = None,
-        timeout: int | None = None,
-        verbose: bool = False,
-    ) -> PRReviewComplete:
-        result: PRReviewComplete = await generate_multi_agent_pr_review(
-            repository=repository,
-            pull_request=pull_request,
-            review_depth=review_depth,
-            custom_guidelines=custom_guidelines,
-            files_exclude_patterns=files_exclude_patterns,
-            agents_required=agents_required,
-            timeout=timeout,
-            verbose=verbose,
-        )
-        return result
-
-
 class AgenticOrchestratorAdapter:
-    """Uses the new agentic orchestrator workflow (intent, skills, validation agents)."""
+    """Uses the agentic orchestrator workflow (intent, skills, validation agents)."""
 
     async def generate(
         self,
@@ -76,35 +43,10 @@ class AgenticOrchestratorAdapter:
         review_depth: ReviewDepth = ReviewDepth.STANDARD,
         custom_guidelines: list[str] | None = None,
         files_exclude_patterns: list[str] | None = None,
-        agents_required: list[type[SpecializedReviewAgent]] | None = None,
         timeout: int | None = None,
         verbose: bool = False,
-    ) -> PRReviewComplete:
+    ) -> AgenticReviewComplete:
         result = await generate_agentic_pr_review(
-            repository=repository,
-            pull_request=pull_request,
-            review_depth=review_depth,
-            custom_guidelines=custom_guidelines,
-            files_exclude_patterns=files_exclude_patterns,
-            timeout=timeout,
-            verbose=verbose,
-        )
-        return PRReviewComplete(output=result.output)
-
-
-class DiffByDiffReviewAdapter:
-    async def generate(
-        self,
-        repository: Repository,
-        pull_request: PullRequest,
-        review_depth: ReviewDepth = ReviewDepth.STANDARD,
-        custom_guidelines: list[str] | None = None,
-        files_exclude_patterns: list[str] | None = None,
-        agents_required: list[type[SpecializedReviewAgent]] | None = None,
-        timeout: int | None = None,
-        verbose: bool = False,
-    ) -> PRReviewComplete:
-        result: PRReviewComplete = await generate_diff_by_diff_pr_review(
             repository=repository,
             pull_request=pull_request,
             review_depth=review_depth,
@@ -140,7 +82,6 @@ class PRReviewOrchestratorWorkflow(Workflow):
             review_depth=ev.config.review_depth,
             custom_guidelines=ev.config.custom_guidelines,
             files_exclude_patterns=ev.config.files_exclude_patterns,
-            agents_required=ev.config.agents_required,
             timeout=ev.config.timeout,
             verbose=ev.config.verbose,
         )

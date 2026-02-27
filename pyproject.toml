@@ -50,7 +50,7 @@ members = ["packages/*"]
 core = "lampe.core:main"
 template = "lampe.template:main"
 lampe = "lampe.cli.entrypoint:main"
-generate_pr_review = "lampe.review.workflows.pr_review.multi_agent_pipeline:main"
+generate_pr_review = "lampe.review.workflows.agentic_review.run:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lampe"]
