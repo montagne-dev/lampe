@@ -1,6 +1,10 @@
 # CHANGELOG
 
 
+## v0.7.0 (2026-02-27)
+### Features
+
+* feat: quick agent review (#13) ([`6fd9b2a`](https://github.com/montagne-dev/lampe/commit/6fd9b2aa3fadaec81b2a7b056f524540839eb4e4))
 ## v0.6.2 (2026-02-27)
 ### Hotfix
 
