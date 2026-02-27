@@ -19,5 +19,5 @@ jobs:
         with:
           command: review
           variant: quick
-          review_depth: basic
+          review_depth: standard
           files_exclude: "uv.lock"
