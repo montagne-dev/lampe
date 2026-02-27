@@ -148,6 +148,7 @@ allowed_tags = [
     "docs",
     "feat",
     "fix",
+    "hotfix",
     "perf",
     "style",
     "refactor",
@@ -156,6 +157,7 @@ allowed_tags = [
 minor_tags = ["feat"]
 patch_tags = [
     "fix",
+    "hotfix",
     "perf",
     "build",
     "chore",
