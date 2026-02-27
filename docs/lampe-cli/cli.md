@@ -136,7 +136,7 @@ lampe review [OPTIONS]
 #### Optional Options
 
 - `--title TEXT`: Title to provide context to the model (default: "Pull Request")
-- `--variant [multi-agent|diff-by-diff]`: Choose the review variant (default: `multi-agent`)
+- `--variant [agentic]`: Choose the review variant (default: `agentic`)
 - `--output [auto|console|github|gitlab|bitbucket]`: Output provider (default: `auto`)
 - `--review-depth [basic|standard|comprehensive]`: Review depth level (default: `standard`)
   - **`basic`**: Uses `gpt-5-nano` for faster, lighter reviews
@@ -189,17 +189,6 @@ lampe review \
   --output console
 ```
 
-**Diff-by-diff variant (parallel file reviews):**
-
-```sh
-lampe review \
-  --repo . \
-  --base "$(git merge-base origin/main HEAD)" \
-  --head "$(git rev-parse HEAD)" \
-  --variant diff-by-diff \
-  --review-depth standard
-```
-
 **With custom guidelines:**
 
 ```sh
@@ -211,27 +200,7 @@ lampe review \
   --guideline "Check for performance bottlenecks"
 ```
 
-#### Variants
-
-##### Multi-Agent Variant (default)
-
-The multi-agent variant uses specialized agents that focus on different aspects of code quality:
-
-- Design patterns
-- Security
-- Performance
-- Code quality
-- Testing
-
-Each agent provides focused feedback in their domain.
-
-##### Diff-by-Diff Variant
-
-The diff-by-diff variant reviews each file change in parallel, providing focused analysis on individual file changes. This is particularly useful for:
-
-- Large PRs with many files
-- Parallel processing for faster reviews
-- File-specific bug detection
+**Review variants:** The `--variant` option selects the review strategy (default: `agentic`). Currently only the agentic variant is implemented; more variants may be added later. The agentic workflow uses an orchestrator that extracts PR intent, discovers and selects skills (e.g. from `.cursor/skills/` or `.lampe/skills/`), plans validation tasks, and runs validation agents before aggregating feedback.
 
 ### `lampe check-reviewed`
 

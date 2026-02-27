@@ -63,7 +63,7 @@ lampe describe \
 - `--base SHA` (required): Base commit SHA for the diff.
 - `--head SHA` (required): Head commit SHA for the diff.
 - `--title TEXT` (default: "Pull Request"): Title to provide context to the model.
-- `--variant [default|agentic]` (default: `default`): Choose the workflow variant.
+- `--variant`: For `describe`: `default` or `agentic` (default: `default`). For `review`: review variant (default: `agentic`; additional variants may be added later).
 - `--output [auto|console|github|gitlab|bitbucket]` (default: `auto`): Output provider.
 - `--exclude PATTERN` (repeatable): Glob patterns to exclude from the diff.
 - `--reinclude PATTERN` (repeatable): Glob patterns to re-include after exclusion.

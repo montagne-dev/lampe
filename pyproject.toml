@@ -1,6 +1,6 @@
 [project]
 name = "lampe-sdk"
-version = "0.5.0"
+version = "0.5.1"
 description = "lampe-sdk will higlight provide feedback on your code base."
 readme = "README.md"
 author = "antoine@montagne.dev"
@@ -50,7 +50,7 @@ members = ["packages/*"]
 core = "lampe.core:main"
 template = "lampe.template:main"
 lampe = "lampe.cli.entrypoint:main"
-generate_pr_review = "lampe.review.workflows.pr_review.multi_agent_pipeline:main"
+generate_pr_review = "lampe.review.workflows.agentic_review.run:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lampe"]

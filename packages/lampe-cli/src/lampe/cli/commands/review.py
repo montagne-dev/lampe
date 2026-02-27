@@ -7,8 +7,6 @@ import typer
 
 from lampe.cli.orchestrators.pr_review import (
     AgenticOrchestratorAdapter,
-    AgenticReviewAdapter,
-    DiffByDiffReviewAdapter,
     PRReviewConfig,
     PRReviewOrchestratorWorkflow,
     PRReviewStart,
@@ -16,7 +14,6 @@ from lampe.cli.orchestrators.pr_review import (
 from lampe.cli.providers.base import Provider
 from lampe.core import initialize
 from lampe.core.data_models import PullRequest, Repository
-from lampe.review.workflows.pr_review.agents import DefaultAgent
 from lampe.review.workflows.pr_review.data_models import ReviewDepth
 
 
@@ -29,8 +26,8 @@ def review(
     output: str = typer.Option("auto", help="Output provider (auto|console|github|gitlab|bitbucket)"),
     review_depth: ReviewDepth = typer.Option(ReviewDepth.STANDARD, help="Review depth (basic|standard|comprehensive)"),
     variant: str = typer.Option(
-        "multi-agent",
-        help="Review variant (multi-agent|diff-by-diff|agentic)",
+        "agentic",
+        help="Review variant (agentic for now; additional variants may be added later)",
     ),
     guidelines: list[str] | None = typer.Option(None, "--guideline", help="Custom review guidelines (can be repeated)"),
     files_exclude: list[str] | None = typer.Option(None, "--exclude"),
@@ -58,17 +55,15 @@ def review(
 
     provider = Provider.create_provider(provider_name=output, repository=repo_model, pull_request=pr_model)
 
-    if variant == "diff-by-diff":
-        generator = DiffByDiffReviewAdapter()
-    elif variant == "agentic":
+    if variant == "agentic":
         generator = AgenticOrchestratorAdapter()
     else:
-        generator = AgenticReviewAdapter()
+        typer.echo(f"Unknown review variant '{variant}'; using agentic.", err=True)
+        generator = AgenticOrchestratorAdapter()
     pr_cfg = PRReviewConfig(
         review_depth=review_depth,
         custom_guidelines=guidelines,
         files_exclude_patterns=files_exclude,
-        agents_required=[DefaultAgent],
         timeout=timeout,
         verbose=verbose,
     )
