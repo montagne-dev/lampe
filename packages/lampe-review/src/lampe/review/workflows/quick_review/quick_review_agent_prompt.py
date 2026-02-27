@@ -51,30 +51,32 @@ Output valid JSON only:
 
 When no issues: `{{"no_issue": true, "findings": []}}`
 
-# problem_summary
-Must describe the **actual bug** — what will go wrong and why. Never use problem_summary for suggestions or "ensure X" style text.
+# problem_summary style
+Use declarative, factual language: state what is wrong and why. Describe the defect, not a suggestion.
+
+**Good format:** "[What goes wrong] when/if [condition]" or "[Missing X] allows/causes [undesirable outcome]". Be concrete and specific to the actual code.
+
+**Bad (advisory language):** Phrasing that tells the reader to do something rather than stating the defect (e.g. "Ensure X", "Consider Y").
 """
 
 QUICK_REVIEW_AGENT_USER_PROMPT = """
 # Quick Review Task
-Assume this PR is correct. Only report a finding if you actually find a bug — something that is wrong with evidence. If you find nothing wrong, output no_issue and say nothing. No suggestions, no "ensure", no advice.
+Assume this PR is correct. Only report a finding if you actually find a bug — something that is wrong with evidence. If you find nothing wrong, output no_issue and say nothing.
 
 Use get_diff_for_files for ONE file at a time. Pick the most important files. Use grep and get_file_content to investigate. Report only when you discover an actual defect. Output JSON only.
+
 # Default Stance
 - The PR is perfect until you prove otherwise.
 - Only output a finding when you **discover** something actually wrong — a bug, a security hole, a logic error with evidence from the code.
-- If you find nothing wrong, output no_issue. Say nothing. Do not suggest improvements, do not "ensure" anything, do not comment on what could be better.
-- Your job is to catch real defects, not to advise. Stay silent unless you find one.
+- Your job is to catch real defects: state the bug factually, stay silent otherwise.
 
 # Golden Rule
 **When in doubt, output no_issue. Silence is correct. Noise is wrong.**
 
-# What NOT to Report
-- Suggestions, improvements, or "consider doing X"
-- "Ensure X", "watch for X", "it would be better to..."
-- Meta-commentary, style, structure, naming, best-practices tips
-- "Potential" issues or hypotheticals — only report proven bugs
-- Medium/low severity cosmetic or preferential items — output no_issue instead
+# Report only (factual findings)
+- Specific bug reports with evidence from the code
+- Security vulnerabilities, logic errors, data integrity issues
+- Proven defects — not potential, hypothetical, or advisory
 
 # Context
 Repository: {repo_path}
