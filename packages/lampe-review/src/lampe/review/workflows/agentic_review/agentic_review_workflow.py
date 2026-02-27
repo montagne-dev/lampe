@@ -340,7 +340,6 @@ async def generate_agentic_pr_review(
         review_depth=review_depth,
         custom_guidelines=custom_guidelines,
         files_exclude_patterns=files_exclude_patterns,
-        use_multi_agent=True,
     )
     workflow = AgenticReviewWorkflow(timeout=timeout, verbose=verbose)
     result: AgenticReviewComplete = await workflow.run(start_event=AgenticReviewStart(input=input_data))

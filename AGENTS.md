@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Lampe is a code review agent system that uses specialized AI agents to perform comprehensive pull request reviews. The system follows a multi-agent architecture where different agents focus on specific aspects of code quality.
+Lampe is a code review agent system that uses an agentic orchestrator to perform comprehensive pull request reviews (intent extraction, skill selection, validation agents, and aggregation).
 
 ## Prompt Separation Pattern
 
@@ -79,14 +79,17 @@ class AgentClass(Workflow):
 
 ## Agent Workflow Guidelines
 
-- Each specialized agent should focus on one domain (security, performance, etc.)
-- Use the multi-agent pipeline for comprehensive reviews
-- Maintain separation between prompt content and business logic
-- Follow the established pattern for prompt file organization
+- Validation agents in the agentic workflow focus on specific verification tasks.
+- Maintain separation between prompt content and business logic.
+- Follow the established pattern for prompt file organization.
+
+## Review Variants
+
+The CLI supports `--variant` for the review command (default: `agentic`). Currently only the agentic variant is available; additional variants may be added in the future.
 
 ## Agentic Review Workflow
 
-The **agentic** variant (`--variant agentic`) uses an orchestrator that:
+The agentic review workflow (default) uses an orchestrator that:
 
 1. **Extracts PR intent** from title, description, and diff
 2. **Discovers skills** — any `SKILL.md` file in the repo (e.g. `.cursor/skills/`, `docs/`, `guidelines/`)
@@ -94,14 +97,6 @@ The **agentic** variant (`--variant agentic`) uses an orchestrator that:
 4. **Plans validation tasks** — orchestrator formulates concrete validation questions for basic agents; skills define tasks for skill-augmented agents
 5. **Spawns validation agents** (basic or skill-augmented) to verify each task
 6. **Aggregates and QA** — deduplicates, prioritizes, selects top feedback
-
-### Review Variants
-
-| Variant | Description |
-|---------|-------------|
-| `multi-agent` | Fixed specialized agents (DefaultAgent, DesignPatternAgent, etc.) |
-| `diff-by-diff` | One DiffFocusedAgent per changed file, runs in parallel |
-| `agentic` | Orchestrator + validation agents + skills (SKILL.md from repo) |
 
 ### Skills for Agentic Review
 

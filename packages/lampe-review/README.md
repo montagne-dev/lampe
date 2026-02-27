@@ -33,37 +33,32 @@ Example output:
 - Line 42: This could cause performance issues with large datasets
 ```
 
-To use the PR review workflow:
+To use the PR review workflow (agentic orchestrator with intent, skills, and validation agents):
 
 ```python
-data = {...}
-input = PRReviewInput.model_validate(data)
+from lampe.review.workflows import generate_agentic_pr_review
+from lampe.review.workflows.pr_review.data_models import PRReviewInput, ReviewDepth
+
+# ... build repository and pull_request from your context ...
 
 result = asyncio.run(
-    generate_pr_review(
-        repository=input.repository,
-        pull_request=input.pull_request,
-        review_depth="standard",
-        custom_guidelines=["Focus on security vulnerabilities", "Check for performance issues"]
+    generate_agentic_pr_review(
+        repository=repository,
+        pull_request=pull_request,
+        review_depth=ReviewDepth.STANDARD,
+        custom_guidelines=["Focus on security vulnerabilities", "Check for performance issues"],
     )
 )
 
-for review in result.reviews:
-    print(f"File: {review.file_path}")
-    print(f"Summary: {review.summary}")
-    for line, comment in review.line_comments.items():
-        print(f"Line {line}: {comment}")
+for agent_output in result.output:
+    for file_review in agent_output.reviews:
+        print(f"File: {file_review.file_path}")
+        print(f"Summary: {file_review.summary}")
+        for line, comment in file_review.line_comments.items():
+            print(f"Line {line}: {comment}")
 ```
 
-### Running workflows
-
-If your workspace is set up, you can run the review workflow from the workspace root:
-
-```sh
-uv run generate_pr_review
-```
-
-These scripts are defined in the root `pyproject.toml` file under the `[project.scripts]` section.
+You can also run review via the CLI: `lampe review --repo . --base <base_sha> --head <head_sha>` (see `lampe-cli` package). From the workspace root, a script is available for JSON-file input: `uv run generate_pr_review <input_json_file>` (input must contain `repository` and `pull_request`; optional `repository.url` triggers a clone).
 
 ## Adding Dependencies
 

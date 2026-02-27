@@ -123,8 +123,7 @@ Performs code review analysis on the pull request.
 
 **Review Variants:**
 
-- **`multi-agent`**: Uses specialized agents for different aspects (default)
-- **`diff-by-diff`**: Reviews each file change in parallel
+Currently, only the `agentic` variant is available. The review command uses the agentic workflow by default, and the `variant` input applies to both `describe` and `review` commands. Additional variants may be added in future releases.
 
 ### `healthcheck`
 
@@ -141,22 +140,22 @@ Verifies that the Lampe SDK is properly configured and can connect to required s
 
 ### Input Parameters
 
-| Input             | Description                                                                                                                         | Required | Default                                        |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------- |
-| `command`         | The Lampe CLI command to run (`describe`, `review`, `healthcheck`)                                                                  | Yes      | `describe`                                     |
-| `repo`            | Repository path                                                                                                                     | No       | `.`                                            |
-| `title`           | PR title (for local runs)                                                                                                           | No       | `Pull Request`                                 |
-| `base_ref`        | Base ref for comparison                                                                                                             | No       | `${{ github.base_ref }}`                       |
-| `head_ref`        | Head ref for comparison                                                                                                             | No       | `${{ github.head_ref }}`                       |
-| `output`          | Output provider (`auto`, `console`, `github`, `gitlab`, `bitbucket`)                                                                | No       | `auto`                                         |
-| `variant`         | Generation variant (`default`, `agentic`) or review variant (`multi-agent`, `diff-by-diff`)                                         | No       | `default` (describe) or `multi-agent` (review) |
-| `review_depth`    | Review depth level (`basic`, `standard`, `comprehensive`). Model selection: basic=gpt-5-nano, standard=gpt-5, comprehensive=gpt-5.1 | No       | `standard`                                     |
-| `files_exclude`   | Comma-separated list of file patterns to exclude                                                                                    | No       | -                                              |
-| `files_reinclude` | Comma-separated list of file patterns to reinclude                                                                                  | No       | -                                              |
-| `max_tokens`      | Maximum tokens for truncation                                                                                                       | No       | `8000`                                         |
-| `timeout_seconds` | Timeout in seconds                                                                                                                  | No       | -                                              |
-| `verbose`         | Enable verbose output                                                                                                               | No       | `false`                                        |
-| `deepen_length`   | Git fetch deepen length for merge-base                                                                                              | No       | `10`                                           |
+| Input             | Description                                                                                                                         | Required | Default                                   |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------- |
+| `command`         | The Lampe CLI command to run (`describe`, `review`, `healthcheck`)                                                                  | Yes      | `describe`                                |
+| `repo`            | Repository path                                                                                                                     | No       | `.`                                       |
+| `title`           | PR title (for local runs)                                                                                                           | No       | `Pull Request`                            |
+| `base_ref`        | Base ref for comparison                                                                                                             | No       | `${{ github.base_ref }}`                  |
+| `head_ref`        | Head ref for comparison                                                                                                             | No       | `${{ github.head_ref }}`                  |
+| `output`          | Output provider (`auto`, `console`, `github`, `gitlab`, `bitbucket`)                                                                | No       | `auto`                                    |
+| `variant`         | For `describe`: generation variant (`default`, `agentic`). For `review`: review variant (default: `agentic`; more may be added).    | No       | `default` (describe) / `agentic` (review) |
+| `review_depth`    | Review depth level (`basic`, `standard`, `comprehensive`). Model selection: basic=gpt-5-nano, standard=gpt-5, comprehensive=gpt-5.1 | No       | `standard`                                |
+| `files_exclude`   | Comma-separated list of file patterns to exclude                                                                                    | No       | -                                         |
+| `files_reinclude` | Comma-separated list of file patterns to reinclude                                                                                  | No       | -                                         |
+| `max_tokens`      | Maximum tokens for truncation                                                                                                       | No       | `8000`                                    |
+| `timeout_seconds` | Timeout in seconds                                                                                                                  | No       | -                                         |
+| `verbose`         | Enable verbose output                                                                                                               | No       | `false`                                   |
+| `deepen_length`   | Git fetch deepen length for merge-base                                                                                              | No       | `10`                                      |
 
 ### Environment Variables
 
@@ -237,7 +236,6 @@ jobs:
         uses: montagne-dev/lampe@main
         with:
           command: review
-          variant: diff-by-diff
           review_depth: comprehensive
           output: github
         env:
@@ -294,7 +292,6 @@ jobs:
       - uses: montagne-dev/lampe@main
         with:
           command: review
-          variant: multi-agent
           review_depth: standard
           output: github
         env:
@@ -302,7 +299,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-**Comprehensive review with diff-by-diff variant:**
+**Comprehensive review:**
 
 ```yaml
 name: Comprehensive Review
@@ -319,7 +316,6 @@ jobs:
       - uses: montagne-dev/lampe@main
         with:
           command: review
-          variant: diff-by-diff
           review_depth: comprehensive
           output: github
         env:
@@ -344,7 +340,6 @@ jobs:
       - uses: montagne-dev/lampe@main
         with:
           command: review
-          variant: diff-by-diff
           review_depth: basic
           output: github
         env:
