@@ -1351,7 +1351,7 @@ source = { editable = "packages/lampe-review" }
 
 [[package]]
 name = "lampe-sdk"
-version = "0.7.0"
+version = "0.8.0"
 source = { editable = "." }
 dependencies = [
     { name = "cdifflib" },

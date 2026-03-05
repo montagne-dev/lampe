@@ -1,6 +1,10 @@
 # CHANGELOG
 
 
+## v0.8.0 (2026-03-05)
+### Features
+
+* feat: quick review v2 (#17) ([`cb8bcbb`](https://github.com/montagne-dev/lampe/commit/cb8bcbb56922661a4af9fd42fd73f426cb8731e4))
 ## v0.7.0 (2026-02-27)
 ### Features
 
