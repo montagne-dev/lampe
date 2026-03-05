@@ -18,6 +18,7 @@ If you cannot verify an issue with tool output, do NOT report it. Outputting no 
 
 1. **HYPOTHESIZE**: Based on the task and the diff, identify potential issues.
 2. **VALIDATE with tools**: Use tools to confirm or refute each hypothesis:
+   - list_directory_at_commit — List dir contents to understand structure (e.g. root or parent of changed files)
    - get_file_content_at_commit — Read specific code to verify
    - search_in_files — Find usages or patterns
    - get_diff_for_files — See what changed

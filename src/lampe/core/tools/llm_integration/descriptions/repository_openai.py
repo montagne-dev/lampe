@@ -91,6 +91,22 @@ Behavioral guidance:
 """  # noqa: E501
 
 
+LIST_DIRECTORY_AT_COMMIT_DESCRIPTION = """
+Lists directory contents at a specific commit (like ls). Use to understand project structure.
+
+Parameters:
+- relative_dir_path (string): Directory path relative to repository root (e.g. "src/", "packages/", "." for root).
+- commit_hash (string): Commit reference to list at (e.g., branch name, commit SHA).
+- repo_path (string): Path to the git repository.
+
+Returns:
+- Formatted listing of entries with type (blob=file, tree=dir), name, and full path.
+
+Behavioral guidance:
+- Use to orient yourself in the codebase before fetching diffs or file contents.
+- List root (".") or parent dirs of files you are reviewing.
+"""  # noqa: E501
+
 FIND_FILES_BY_PATTERN_DESCRIPTION = """
 Searches for files in a git repository using pattern matching.
 
@@ -109,6 +125,19 @@ Behavioral guidance:
 
 
 # Quick review: context-window-aware descriptions
+
+QUICK_REVIEW_LIST_DIRECTORY_DESCRIPTION = """
+Lists directory contents at a commit (like ls). Use to understand project structure before fetching diffs.
+
+Parameters:
+- relative_dir_path (string): Directory path relative to repo root (e.g. "src/", "packages/", "." for root)
+- commit_hash (string): Commit reference (head commit)
+- repo_path (string): Repo path (pre-filled)
+
+Behavioral guidance:
+- Use to orient yourself in the codebase: list root or parent dirs of changed files.
+- Entries show type (blob=file, tree=dir), name, and full path.
+"""  # noqa: E501
 
 QUICK_REVIEW_GET_DIFF_DESCRIPTION = """
 Gets the diff for SPECIFIC files only. CRITICAL: Always pass file_paths with ONE file (or at most 2). Never omit file_paths — that returns the whole PR diff and blows the context window.

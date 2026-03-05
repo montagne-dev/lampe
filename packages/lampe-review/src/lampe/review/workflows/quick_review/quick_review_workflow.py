@@ -16,6 +16,11 @@ from lampe.review.workflows.pr_review.data_models import (
     AgentReviewOutput,
     PRReviewInput,
 )
+from lampe.review.workflows.quick_review.hallucination_filter_step import (
+    HallucinationFilterCompleteEvent,
+    HallucinationFilterStartEvent,
+    HallucinationFilterWorkflow,
+)
 from lampe.review.workflows.quick_review.quick_review_agent import (
     QuickReviewAgent,
     QuickReviewAgentStart,
@@ -44,6 +49,10 @@ class QuickReviewWorkflow(Workflow):
         self.verbose = verbose
         self.logger = logging.getLogger("lampe.review.quick_review")
         self.agent = QuickReviewAgent()
+        self.hallucination_filter = HallucinationFilterWorkflow(
+            timeout=timeout,
+            verbose=verbose,
+        )
 
     @step
     async def run_quick_review(self, ctx: Context, ev: QuickReviewStart) -> QuickReviewComplete:
@@ -75,7 +84,16 @@ class QuickReviewWorkflow(Workflow):
             return QuickReviewComplete(output=[])
 
         agent_outputs = _validation_results_to_agent_review_output([complete.validation_result])
-        return QuickReviewComplete(output=agent_outputs)
+        if not agent_outputs:
+            return QuickReviewComplete(output=[])
+
+        filter_result: HallucinationFilterCompleteEvent = await self.hallucination_filter.run(
+            start_event=HallucinationFilterStartEvent(
+                agent_reviews=agent_outputs,
+                files_changed=files_changed,
+            ),
+        )
+        return QuickReviewComplete(output=filter_result.filtered_reviews)
 
 
 async def generate_quick_pr_review(

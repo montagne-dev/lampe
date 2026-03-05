@@ -82,12 +82,17 @@ Your final description MUST follow this structure (in Markdown):
    - Returns: File contents at the specified commit
 
 ## File Tools
-1. `find_files_by_pattern`
+1. `list_directory_at_commit`
+   - Use to list directory contents at a commit (like ls)
+   - Example: When you need to understand project structure or locate files
+   - Returns: Listing with type (blob/tree), name, and path
+
+2. `find_files_by_pattern`
    - Use to locate specific files by pattern
    - Example: When you need to find related files not in the diff
    - Returns: List of matching file paths
 
-2. `search_in_files`
+3. `search_in_files`
    - Use to find specific code patterns in files
    - Example: When you need to understand how a changed function is used elsewhere
    - Returns: Matching lines with line numbers
