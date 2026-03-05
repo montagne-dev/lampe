@@ -3,7 +3,6 @@
 import logging
 from typing import Any
 
-from llama_index.core.output_parsers import PydanticOutputParser
 from llama_index.core.workflow import Context, StartEvent, StopEvent, step
 from llama_index.llms.litellm import LiteLLM
 
@@ -17,10 +16,10 @@ from lampe.core.workflows.function_calling_agent import (
 )
 from lampe.review.workflows.agentic_review.data_models import (
     ValidationAgentInput,
-    ValidationAgentResponseModel,
     ValidationFinding,
     ValidationResult,
 )
+from lampe.review.workflows.agentic_review.response_parse import parse_validation_response
 from lampe.review.workflows.agentic_review.validation.validation_agent_prompt import (
     VALIDATION_AGENT_BASE_SYSTEM_PROMPT,
     VALIDATION_AGENT_USER_PROMPT,
@@ -107,28 +106,26 @@ class ValidationAgent(FunctionCallingAgent):
         return ValidationAgentComplete(validation_result=result)
 
     def _parse_response(self, content: str, sources: list) -> tuple[list[ValidationFinding], bool]:
-        """Parse agent response into ValidationFinding list."""
-        try:
-            parser = PydanticOutputParser(output_cls=ValidationAgentResponseModel)
-            parsed = parser.parse(content.replace('\n"', '"'))
-
-            findings: list[ValidationFinding] = []
-            for item in parsed.findings or []:
-                if isinstance(item, dict):
-                    findings.append(
-                        ValidationFinding(
-                            file_path=str(item.get("file_path", "unknown")),
-                            line_number=int(item.get("line_number", 0)),
-                            action=str(item.get("action", "review")),
-                            problem_summary=str(item.get("problem_summary", "")),
-                            severity=str(item.get("severity", "medium")),
-                            category=str(item.get("category", "general")),
-                            sources=sources,
-                        )
-                    )
-
-            no_issue = parsed.no_issue if hasattr(parsed, "no_issue") else len(findings) == 0
-            return findings, no_issue
-        except Exception:
-            self.logger.exception("Failed to parse validation agent response")
+        """Parse agent response into ValidationFinding list. Gracefully handles malformed/truncated JSON."""
+        parsed, success = parse_validation_response(content)
+        if not success or parsed is None:
+            self.logger.warning("Failed to parse validation agent response (malformed or truncated JSON)")
             return [], True
+
+        findings: list[ValidationFinding] = []
+        for item in parsed.findings or []:
+            if isinstance(item, dict):
+                findings.append(
+                    ValidationFinding(
+                        file_path=str(item.get("file_path", "unknown")),
+                        line_number=int(item.get("line_number", 0)),
+                        action=str(item.get("action", "review")),
+                        problem_summary=str(item.get("problem_summary", "")),
+                        severity=str(item.get("severity", "medium")),
+                        category=str(item.get("category", "general")),
+                        sources=sources,
+                    )
+                )
+
+        no_issue = parsed.no_issue if hasattr(parsed, "no_issue") else len(findings) == 0
+        return findings, no_issue

@@ -45,7 +45,7 @@ def main() -> None:
 
     for agent_output in result.output:
         print(f"# Agent: {agent_output.agent_name}")
-        print(f'**Focus Areas:** {", ".join(agent_output.focus_areas)}')
+        print(f"**Focus Areas:** {', '.join(agent_output.focus_areas)}")
         print(f"**Global Summary:** {agent_output.summary}")
         print()
         for file_review in agent_output.reviews:

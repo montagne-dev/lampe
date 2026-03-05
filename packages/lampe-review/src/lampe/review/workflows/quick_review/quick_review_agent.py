@@ -3,7 +3,6 @@
 import logging
 from typing import Any
 
-from llama_index.core.output_parsers import PydanticOutputParser
 from llama_index.core.workflow import Context, StartEvent, step
 from llama_index.llms.litellm import LiteLLM
 
@@ -16,10 +15,10 @@ from lampe.core.workflows.function_calling_agent import (
     UserInputEvent,
 )
 from lampe.review.workflows.agentic_review.data_models import (
-    ValidationAgentResponseModel,
     ValidationFinding,
     ValidationResult,
 )
+from lampe.review.workflows.agentic_review.response_parse import parse_validation_response
 from lampe.review.workflows.agentic_review.validation.validation_agent import (
     ValidationAgentComplete,
 )
@@ -108,30 +107,28 @@ class QuickReviewAgent(FunctionCallingAgent):
         return ValidationAgentComplete(validation_result=result)
 
     def _parse_response(self, content: str, sources: list) -> tuple[list[ValidationFinding], bool]:
-        """Parse agent response into ValidationFinding list."""
-        try:
-            parser = PydanticOutputParser(output_cls=ValidationAgentResponseModel)
-            parsed = parser.parse(content.replace('\n"', '"'))
-
-            findings: list[ValidationFinding] = []
-            for item in parsed.findings or []:
-                if isinstance(item, dict):
-                    findings.append(
-                        ValidationFinding(
-                            file_path=str(item.get("file_path", "unknown")),
-                            line_number=int(item.get("line_number", 0)),
-                            action=str(item.get("action", "review")),
-                            problem_summary=str(item.get("problem_summary", "")),
-                            severity=str(item.get("severity", "medium")),
-                            category=str(item.get("category", "general")),
-                            sources=sources,
-                        )
-                    )
-
-            # Quick review: only critical and high. Filter out medium/low.
-            findings = [f for f in findings if f.severity in ("critical", "high")]
-            no_issue = len(findings) == 0
-            return findings, no_issue
-        except Exception:
-            self.logger.exception("Failed to parse quick review agent response")
+        """Parse agent response into ValidationFinding list. Gracefully handles malformed/truncated JSON."""
+        parsed, success = parse_validation_response(content)
+        if not success or parsed is None:
+            self.logger.warning("Failed to parse quick review agent response (malformed or truncated JSON)")
             return [], True
+
+        findings: list[ValidationFinding] = []
+        for item in parsed.findings or []:
+            if isinstance(item, dict):
+                findings.append(
+                    ValidationFinding(
+                        file_path=str(item.get("file_path", "unknown")),
+                        line_number=int(item.get("line_number", 0)),
+                        action=str(item.get("action", "review")),
+                        problem_summary=str(item.get("problem_summary", "")),
+                        severity=str(item.get("severity", "medium")),
+                        category=str(item.get("category", "general")),
+                        sources=sources,
+                    )
+                )
+
+        # Quick review: only critical and high. Filter out medium/low.
+        findings = [f for f in findings if f.severity in ("critical", "high")]
+        no_issue = len(findings) == 0
+        return findings, no_issue
