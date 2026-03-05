@@ -87,6 +87,11 @@ class QuickReviewWorkflow(Workflow):
         if not agent_outputs:
             return QuickReviewComplete(output=[])
 
+        # Skip hallucination filter when no issues to filter (all reviews empty)
+        has_issues = any(fr.structured_comments or fr.line_comments for ao in agent_outputs for fr in ao.reviews)
+        if not has_issues:
+            return QuickReviewComplete(output=agent_outputs)
+
         filter_result: HallucinationFilterCompleteEvent = await self.hallucination_filter.run(
             start_event=HallucinationFilterStartEvent(
                 agent_reviews=agent_outputs,

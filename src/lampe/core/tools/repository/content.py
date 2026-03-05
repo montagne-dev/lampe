@@ -140,7 +140,8 @@ def list_directory_at_commit(
     try:
         repo = Repo(path=repo_path)
         with LocalCommitsAvailability(repo_path, [commit_hash]):
-            tree_ref = f"{commit_hash}:{relative_dir_path.rstrip('/') or '.'}"
+            normalized = (relative_dir_path or "").strip().rstrip("/") or "."
+            tree_ref = commit_hash if normalized == "." else f"{commit_hash}:{normalized}"
             ls_output = repo.git.ls_tree(tree_ref)
             ls_output = sanitize_utf8(ls_output)
         if not ls_output.strip():

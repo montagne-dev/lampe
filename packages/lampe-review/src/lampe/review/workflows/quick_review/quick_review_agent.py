@@ -1,7 +1,7 @@
 """Quick review agent — context-window-aware, grep-first with env-configurable model."""
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 from llama_index.core.workflow import Context, StartEvent, step
 from llama_index.llms.litellm import LiteLLM
@@ -56,7 +56,7 @@ class QuickReviewAgent(FunctionCallingAgent):
     def __init__(self, llm: LiteLLM | None = None, *args: Any, **kwargs: Any) -> None:
         llm = llm or LiteLLM(
             model=get_model("LAMPE_MODEL_QUICK_REVIEW", MODELS.GPT_5_2025_08_07),
-            temperature=0.3,
+            temperature=1,
             reasoning_effort="medium",
         )
         super().__init__(
@@ -65,6 +65,7 @@ class QuickReviewAgent(FunctionCallingAgent):
             system_prompt=QUICK_REVIEW_AGENT_SYSTEM_PROMPT,
             llm=llm,
             max_iterations=10,
+            timeout=None,
             **kwargs,
         )
         self.logger = logging.getLogger(LAMPE_LOGGER_NAME)
@@ -119,7 +120,7 @@ class QuickReviewAgent(FunctionCallingAgent):
                 findings.append(
                     ValidationFinding(
                         file_path=str(item.get("file_path", "unknown")),
-                        line_number=int(item.get("line_number", 0)),
+                        line_number=int(cast(int | str, item.get("line_number", 0))),
                         action=str(item.get("action", "review")),
                         problem_summary=str(item.get("problem_summary", "")),
                         severity=str(item.get("severity", "medium")),

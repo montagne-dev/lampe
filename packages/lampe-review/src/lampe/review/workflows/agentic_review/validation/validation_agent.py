@@ -1,7 +1,7 @@
 """Base validation agent - task-based verification."""
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 from llama_index.core.workflow import Context, StartEvent, StopEvent, step
 from llama_index.llms.litellm import LiteLLM
@@ -120,7 +120,7 @@ class ValidationAgent(FunctionCallingAgent):
                 findings.append(
                     ValidationFinding(
                         file_path=str(item.get("file_path", "unknown")),
-                        line_number=int(item.get("line_number", 0)),
+                        line_number=int(cast(int | str, item.get("line_number", 0))),
                         action=str(item.get("action", "review")),
                         problem_summary=str(item.get("problem_summary", "")),
                         severity=str(item.get("severity", "medium")),
