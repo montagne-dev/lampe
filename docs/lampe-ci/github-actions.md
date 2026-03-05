@@ -167,10 +167,12 @@ The following environment variables can be set as GitHub secrets:
 | `ANTHROPIC_API_KEY`              | Anthropic API key for LLM calls      | Yes (for LLM features) |
 | `LAMPE_GITHUB_APP_ID`            | GitHub App ID for GitHub integration | No                     |
 | `LAMPE_GITHUB_APP_PRIVATE_KEY`   | GitHub App private key               | No                     |
-| `LAMPE_MODEL_DESCRIBE`           | Model for PR description (LiteLLM format) | No                 |
-| `LAMPE_MODEL_REVIEW_AGGREGATION` | Model for review aggregation         | No                     |
-| `LAMPE_MODEL_REVIEW_INTENT`      | Model for intent/skill/task planning  | No                     |
-| `LAMPE_MODEL_REVIEW_VALIDATION`  | Model for review validation agents   | No                     |
+| `LAMPE_MODEL_DESCRIBE`                     | Model for PR description (LiteLLM format)      | No |
+| `LAMPE_MODEL_QUICK_REVIEW`                 | Model for quick review agent                    | No |
+| `LAMPE_MODEL_QUICK_REVIEW_HALLUCINATION_FILTER` | Model for quick review hallucination filter  | No |
+| `LAMPE_MODEL_REVIEW_AGGREGATION`           | Model for review aggregation                    | No |
+| `LAMPE_MODEL_REVIEW_INTENT`                | Model for intent/skill/task planning             | No |
+| `LAMPE_MODEL_REVIEW_VALIDATION`            | Model for review validation agents               | No |
 
 ## Output Providers
 

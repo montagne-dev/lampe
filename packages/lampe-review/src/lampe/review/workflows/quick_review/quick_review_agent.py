@@ -1,4 +1,4 @@
-"""Quick review agent — context-window-aware, grep-first, Claude 4.5 with extended thinking."""
+"""Quick review agent — context-window-aware, grep-first with env-configurable model."""
 
 import logging
 from typing import Any
@@ -6,7 +6,7 @@ from typing import Any
 from llama_index.core.workflow import Context, StartEvent, step
 from llama_index.llms.litellm import LiteLLM
 
-from lampe.core.llmconfig import MODELS
+from lampe.core.llmconfig import MODELS, get_model
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
 from lampe.core.tools.llm_integration import quick_review_tools
 from lampe.core.workflows.function_calling_agent import (
@@ -51,11 +51,11 @@ class QuickReviewAgentStart(StartEvent):
 
 
 class QuickReviewAgent(FunctionCallingAgent):
-    """Lightweight review agent: grep-first, small reads, Claude 4.5 with thinking."""
+    """Lightweight review agent: grep-first, small reads. Model via LAMPE_MODEL_QUICK_REVIEW."""
 
     def __init__(self, llm: LiteLLM | None = None, *args: Any, **kwargs: Any) -> None:
         llm = llm or LiteLLM(
-            model=MODELS.CLAUDE_4_5_SONNET_2025_09_29,
+            model=get_model("LAMPE_MODEL_QUICK_REVIEW", MODELS.GPT_5_2025_08_07),
             temperature=0.3,
             reasoning_effort="medium",
         )
