@@ -1,13 +1,12 @@
-"""Quick review agent — context-window-aware, grep-first, Claude 4.5 with extended thinking."""
+"""Quick review agent — context-window-aware, grep-first with env-configurable model."""
 
 import logging
-from typing import Any
+from typing import Any, cast
 
-from llama_index.core.output_parsers import PydanticOutputParser
 from llama_index.core.workflow import Context, StartEvent, step
 from llama_index.llms.litellm import LiteLLM
 
-from lampe.core.llmconfig import MODELS
+from lampe.core.llmconfig import MODELS, get_model
 from lampe.core.loggingconfig import LAMPE_LOGGER_NAME
 from lampe.core.tools.llm_integration import quick_review_tools
 from lampe.core.workflows.function_calling_agent import (
@@ -16,10 +15,10 @@ from lampe.core.workflows.function_calling_agent import (
     UserInputEvent,
 )
 from lampe.review.workflows.agentic_review.data_models import (
-    ValidationAgentResponseModel,
     ValidationFinding,
     ValidationResult,
 )
+from lampe.review.workflows.agentic_review.response_parse import parse_validation_response
 from lampe.review.workflows.agentic_review.validation.validation_agent import (
     ValidationAgentComplete,
 )
@@ -52,12 +51,12 @@ class QuickReviewAgentStart(StartEvent):
 
 
 class QuickReviewAgent(FunctionCallingAgent):
-    """Lightweight review agent: grep-first, small reads, Claude 4.5 with thinking."""
+    """Lightweight review agent: grep-first, small reads. Model via LAMPE_MODEL_QUICK_REVIEW."""
 
     def __init__(self, llm: LiteLLM | None = None, *args: Any, **kwargs: Any) -> None:
         llm = llm or LiteLLM(
-            model=MODELS.CLAUDE_4_5_SONNET_2025_09_29,
-            temperature=0.3,
+            model=get_model("LAMPE_MODEL_QUICK_REVIEW", MODELS.GPT_5_2025_08_07),
+            temperature=1,
             reasoning_effort="medium",
         )
         super().__init__(
@@ -66,6 +65,7 @@ class QuickReviewAgent(FunctionCallingAgent):
             system_prompt=QUICK_REVIEW_AGENT_SYSTEM_PROMPT,
             llm=llm,
             max_iterations=10,
+            timeout=None,
             **kwargs,
         )
         self.logger = logging.getLogger(LAMPE_LOGGER_NAME)
@@ -108,30 +108,28 @@ class QuickReviewAgent(FunctionCallingAgent):
         return ValidationAgentComplete(validation_result=result)
 
     def _parse_response(self, content: str, sources: list) -> tuple[list[ValidationFinding], bool]:
-        """Parse agent response into ValidationFinding list."""
-        try:
-            parser = PydanticOutputParser(output_cls=ValidationAgentResponseModel)
-            parsed = parser.parse(content.replace('\n"', '"'))
-
-            findings: list[ValidationFinding] = []
-            for item in parsed.findings or []:
-                if isinstance(item, dict):
-                    findings.append(
-                        ValidationFinding(
-                            file_path=str(item.get("file_path", "unknown")),
-                            line_number=int(item.get("line_number", 0)),
-                            action=str(item.get("action", "review")),
-                            problem_summary=str(item.get("problem_summary", "")),
-                            severity=str(item.get("severity", "medium")),
-                            category=str(item.get("category", "general")),
-                            sources=sources,
-                        )
-                    )
-
-            # Quick review: only critical and high. Filter out medium/low.
-            findings = [f for f in findings if f.severity in ("critical", "high")]
-            no_issue = len(findings) == 0
-            return findings, no_issue
-        except Exception:
-            self.logger.exception("Failed to parse quick review agent response")
+        """Parse agent response into ValidationFinding list. Gracefully handles malformed/truncated JSON."""
+        parsed, success = parse_validation_response(content)
+        if not success or parsed is None:
+            self.logger.warning("Failed to parse quick review agent response (malformed or truncated JSON)")
             return [], True
+
+        findings: list[ValidationFinding] = []
+        for item in parsed.findings or []:
+            if isinstance(item, dict):
+                findings.append(
+                    ValidationFinding(
+                        file_path=str(item.get("file_path", "unknown")),
+                        line_number=int(cast(int | str, item.get("line_number", 0))),
+                        action=str(item.get("action", "review")),
+                        problem_summary=str(item.get("problem_summary", "")),
+                        severity=str(item.get("severity", "medium")),
+                        category=str(item.get("category", "general")),
+                        sources=sources,
+                    )
+                )
+
+        # Quick review: only critical and high. Filter out medium/low.
+        findings = [f for f in findings if f.severity in ("critical", "high")]
+        no_issue = len(findings) == 0
+        return findings, no_issue

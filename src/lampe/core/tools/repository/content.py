@@ -116,6 +116,56 @@ def get_file_content_at_commit(
         raise
 
 
+def list_directory_at_commit(
+    relative_dir_path: str,
+    commit_hash: str = "HEAD",
+    repo_path: str = "/tmp/",
+) -> str:
+    """List directory contents at a specific commit (like ls).
+
+    Parameters
+    ----------
+    relative_dir_path
+        Directory path relative to repository root (e.g. "src/", "." for repo root)
+    commit_hash
+        Commit reference to list at (e.g., "main", commit hash). Defaults to "HEAD"
+    repo_path
+        Path to the git repository, by default "/tmp/"
+
+    Returns
+    -------
+    str
+        Formatted listing of entries: type (blob/tree), name, path. One per line.
+    """
+    try:
+        repo = Repo(path=repo_path)
+        with LocalCommitsAvailability(repo_path, [commit_hash]):
+            normalized = (relative_dir_path or "").strip().rstrip("/") or "."
+            tree_ref = commit_hash if normalized == "." else f"{commit_hash}:{normalized}"
+            ls_output = repo.git.ls_tree(tree_ref)
+            ls_output = sanitize_utf8(ls_output)
+        if not ls_output.strip():
+            return "Empty directory"
+        lines = []
+        for line in ls_output.splitlines():
+            # Format: <mode> <type> <hash><tab><name>
+            parts = line.split("\t", 1)
+            if len(parts) == 2:
+                header, name = parts
+                obj_type = header.split()[1] if len(header.split()) >= 2 else "?"
+                prefix = relative_dir_path.rstrip("/") or "."
+                full_path = f"{prefix}/{name}" if prefix != "." else name
+                lines.append(f"{obj_type}\t{name}\t{full_path}")
+            else:
+                lines.append(line)
+        return "```\n" + "\n".join(lines) + "\n```"
+    except GitCommandError as e:
+        if e.status == 128:
+            return f"Error: Path not found or not a directory at {commit_hash}"
+        logger.exception(f"Error listing directory: {e}")
+        return f"Error: {str(e)}"
+
+
 def get_file_size_at_commit(file_path: str, commit_hash: str = "HEAD", repo_path: str = "/tmp/") -> int:
     """Get the size of a file at a specific commit.
 

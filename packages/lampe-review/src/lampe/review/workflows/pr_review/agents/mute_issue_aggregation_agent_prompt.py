@@ -1,37 +1,5 @@
 """Prompt for mute-issue aggregation agent that cleans and deduplicates review comments."""
 
-from typing import Any
-
-ISSUE_BLOCK_TEMPLATE = """### Issue `{issue_id}`
-- **Agent:** {agent}
-- **File:** `{file_path}`
-- **Line:** {line}
-- **Severity:** {severity}
-- **Category:** {category}
-- **Comment:** {comment}
-"""
-
-
-def format_issues_as_markdown(issues: list[dict[str, Any]]) -> str:
-    """Format issues as markdown for the LLM prompt instead of JSON."""
-    if not issues:
-        return '_No issues to review._'
-
-    blocks = [
-        ISSUE_BLOCK_TEMPLATE.format(
-            issue_id=issue.get('id', ''),
-            agent=issue.get('agent', ''),
-            file_path=issue.get('file', ''),
-            line=issue.get('line', ''),
-            severity=issue.get('severity', ''),
-            category=issue.get('category', ''),
-            comment=issue.get('comment', ''),
-        ).strip()
-        for issue in issues
-    ]
-    return '\n\n'.join(blocks)
-
-
 MUTE_ISSUE_AGGREGATION_AGENT_SYSTEM_PROMPT = """
 # Role and Objective
 You are an expert code review aggregator. Your task is to clean, deduplicate, and filter review comments from multiple parallel code reviews.
@@ -94,7 +62,7 @@ Each agent reviewed one specific file's diff to find bugs.
 **All Files Changed in PR:**
 {files_changed}
 
-**Issues to Review (with IDs for muting):**
+{tools_used}**Issues to Review (with IDs for muting):**
 {issues_with_ids}
 
 **Instructions:**

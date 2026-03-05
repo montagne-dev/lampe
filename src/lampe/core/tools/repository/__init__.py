@@ -1,4 +1,7 @@
-from lampe.core.tools.repository.content import get_file_content_at_commit
+from lampe.core.tools.repository.content import (
+    get_file_content_at_commit,
+    list_directory_at_commit,
+)
 from lampe.core.tools.repository.diff import (
     FileDiffInfo,
     get_diff_between_commits,
@@ -28,6 +31,7 @@ from lampe.core.tools.repository.search import (
 
 __all__ = [
     "get_file_content_at_commit",
+    "list_directory_at_commit",
     "get_diff_between_commits",
     "get_diff_for_files",
     "list_changed_files",

@@ -319,12 +319,14 @@ This command checks:
 
 Override the LLM model for each workflow component. Use LiteLLM format: `provider/model-id` (e.g. `anthropic/claude-3-5-sonnet-20241022`, `openai/gpt-5-2025-08-07`). When set, the health check validates that the corresponding API key is configured.
 
-| Variable                       | Default                      | Used By                                                      |
-| ------------------------------ | ---------------------------- | ------------------------------------------------------------ |
-| `LAMPE_MODEL_DESCRIBE`         | `openai/gpt-5-nano-2025-08-07` | PR description workflow                                      |
-| `LAMPE_MODEL_REVIEW_AGGREGATION` | `openai/gpt-5-2025-08-07`  | Review: LLM aggregation step (deduplication, muting)          |
-| `LAMPE_MODEL_REVIEW_INTENT`    | `openai/gpt-5.2-codex`      | Review: intent extraction, skill selection, task planning     |
-| `LAMPE_MODEL_REVIEW_VALIDATION` | `openai/gpt-5.1-codex-mini` | Review: validation agents                                    |
+| Variable                                   | Default                      | Used By                                                      |
+| ------------------------------------------ | ---------------------------- | ------------------------------------------------------------ |
+| `LAMPE_MODEL_DESCRIBE`                     | `openai/gpt-5-nano-2025-08-07` | PR description workflow                                      |
+| `LAMPE_MODEL_QUICK_REVIEW`                  | `openai/gpt-5-2025-08-07`    | Review: quick review agent (single-agent variant)             |
+| `LAMPE_MODEL_QUICK_REVIEW_HALLUCINATION_FILTER` | `openai/gpt-5-nano-2025-08-07` | Review: hallucination filter step (quick review)              |
+| `LAMPE_MODEL_REVIEW_AGGREGATION`            | `openai/gpt-5-2025-08-07`    | Review: LLM aggregation step (deduplication, muting)         |
+| `LAMPE_MODEL_REVIEW_INTENT`                 | `openai/gpt-5.2-codex`       | Review: intent extraction, skill selection, task planning    |
+| `LAMPE_MODEL_REVIEW_VALIDATION`             | `openai/gpt-5.1-codex-mini`  | Review: validation agents                                     |
 
 Example: use Anthropic for validation only:
 

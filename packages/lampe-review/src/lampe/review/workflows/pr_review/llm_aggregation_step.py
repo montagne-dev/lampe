@@ -20,9 +20,13 @@ from lampe.review.workflows.pr_review.agents.mute_issue_aggregation_agent import
 )
 from lampe.review.workflows.pr_review.agents.mute_issue_aggregation_agent_prompt import (
     MUTE_ISSUE_AGGREGATION_USER_PROMPT,
-    format_issues_as_markdown,
 )
-from lampe.review.workflows.pr_review.data_models import AgentReviewOutput, FileReview, ReviewComment
+from lampe.review.workflows.pr_review.data_models import (
+    AgentReviewOutput,
+    FileReview,
+    IssueWithId,
+    ReviewComment,
+)
 
 
 class LLMAggregationStartEvent(StartEvent):
@@ -38,43 +42,27 @@ class LLMAggregationCompleteEvent(StopEvent):
     aggregated_reviews: list[AgentReviewOutput]
 
 
+def _format_sources_for_display(reviews: list[AgentReviewOutput]) -> str:
+    """Format tool sources (tool_name + kwargs, no output) for aggregator context."""
+    lines: list[str] = []
+    for agent_output in reviews:
+        if not agent_output.sources:
+            continue
+        parts = []
+        for src in agent_output.sources:
+            kwargs_str = ", ".join(f"{k}={v!r}" for k, v in (src.tool_kwargs or {}).items())
+            parts.append(f"{src.tool_name}({kwargs_str})" if kwargs_str else src.tool_name)
+        if parts:
+            lines.append(f"- {agent_output.agent_name}: {', '.join(parts)}")
+    if not lines:
+        return ""
+    return "**Tools used by agents (what was searched — no output):**\n" + "\n".join(lines) + "\n\n"
+
+
 def _build_issues_with_ids(reviews: list[AgentReviewOutput]) -> str:
     """Build a formatted string of all issues with their IDs for the LLM prompt."""
-    issues: list[dict[str, Any]] = []
-
-    for agent_idx, agent_output in enumerate(reviews):
-        for file_idx, file_review in enumerate(agent_output.reviews):
-            # Structured comments
-            for comment_idx, comment in enumerate(file_review.structured_comments):
-                issue_id = f"{agent_idx}|{file_idx}|s|{comment_idx}"
-                issues.append(
-                    {
-                        "id": issue_id,
-                        "agent": agent_output.agent_name,
-                        "file": file_review.file_path,
-                        "line": comment.line_number,
-                        "severity": comment.severity,
-                        "category": comment.category,
-                        "comment": comment.comment,
-                    }
-                )
-
-            # Line comments
-            for line_num, comment_text in file_review.line_comments.items():
-                issue_id = f"{agent_idx}|{file_idx}|l|{line_num}"
-                issues.append(
-                    {
-                        "id": issue_id,
-                        "agent": agent_output.agent_name or "unknown",
-                        "file": file_review.file_path,
-                        "line": line_num,
-                        "severity": "n/a",
-                        "category": "line_comment",
-                        "comment": comment_text,
-                    }
-                )
-
-    return format_issues_as_markdown(issues)
+    issues = IssueWithId.build_from_agent_reviews(reviews)
+    return IssueWithId.format_list_for_prompt(issues)
 
 
 def _apply_muted_flags(reviews: list[AgentReviewOutput], muted_reasons: dict[str, str]) -> list[AgentReviewOutput]:
@@ -184,8 +172,11 @@ class LLMAggregationWorkflow(Workflow):
             self.logger.debug(f"Aggregating {len(ev.agent_reviews)} agent reviews via mute_issue tool...")
 
         issues_with_ids = _build_issues_with_ids(ev.agent_reviews)
+        tools_used = _format_sources_for_display(ev.agent_reviews)
         user_prompt = MUTE_ISSUE_AGGREGATION_USER_PROMPT.format(
-            files_changed=ev.files_changed, issues_with_ids=issues_with_ids
+            files_changed=ev.files_changed,
+            issues_with_ids=issues_with_ids,
+            tools_used=tools_used,
         )
 
         try:

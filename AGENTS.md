@@ -89,7 +89,7 @@ class AgentClass(Workflow):
 
 ## Model Configuration
 
-LLM models can be overridden via environment variables. Use `get_model(env_var, default)` from `lampe.core.llmconfig`. Env vars: `LAMPE_MODEL_DESCRIBE`, `LAMPE_MODEL_REVIEW_AGGREGATION`, `LAMPE_MODEL_REVIEW_INTENT`, `LAMPE_MODEL_REVIEW_VALIDATION`. The health check validates that configured models have the corresponding API key.
+LLM models can be overridden via environment variables. Use `get_model(env_var, default)` from `lampe.core.llmconfig`. Env vars: `LAMPE_MODEL_DESCRIBE`, `LAMPE_MODEL_QUICK_REVIEW`, `LAMPE_MODEL_QUICK_REVIEW_HALLUCINATION_FILTER`, `LAMPE_MODEL_REVIEW_AGGREGATION`, `LAMPE_MODEL_REVIEW_INTENT`, `LAMPE_MODEL_REVIEW_VALIDATION`. The health check validates that configured models have the corresponding API key.
 
 ## Review Variants
 

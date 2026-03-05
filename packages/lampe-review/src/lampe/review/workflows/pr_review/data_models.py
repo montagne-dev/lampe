@@ -6,6 +6,15 @@ from pydantic import BaseModel, Field, field_serializer
 from lampe.core.data_models import PullRequest, Repository
 from lampe.core.workflows.function_calling_agent import ToolSource
 
+ISSUE_BLOCK_TEMPLATE = """### Issue `{issue_id}`
+- **Agent:** {agent}
+- **File:** `{file}`
+- **Line:** {line}
+- **Severity:** {severity}
+- **Category:** {category}
+- **Comment:** {comment}
+"""
+
 
 class LightweightToolSource(BaseModel):
     """Lightweight version of ToolSource without tool_output for aggregation."""
@@ -57,6 +66,69 @@ class FileReview(BaseModel):
     def _serialize_muted_line_numbers(self, value: set[str]) -> list[str]:
         """Serialize set to sorted list for JSON compatibility."""
         return sorted(value)
+
+
+class IssueWithId(BaseModel):
+    """Single issue with its mute ID, for use in aggregator/hallucination prompts."""
+
+    issue_id: str = Field(..., description="ID for mute_issue tool (agent_idx|file_idx|s|l|key)")
+    agent: str = Field(..., description="Agent that produced the comment")
+    file: str = Field(..., description="File path")
+    line: str | int = Field(..., description="Line number")
+    severity: str = Field(..., description="Severity level")
+    category: str = Field(..., description="Category of the issue")
+    comment: str = Field(..., description="Comment text")
+
+    def to_markdown_block(self) -> str:
+        """Format this issue as a markdown block for LLM prompts."""
+        return ISSUE_BLOCK_TEMPLATE.format(
+            issue_id=self.issue_id,
+            agent=self.agent,
+            file=self.file,
+            line=self.line,
+            severity=self.severity,
+            category=self.category,
+            comment=self.comment,
+        ).strip()
+
+    @classmethod
+    def build_from_agent_reviews(cls, reviews: list["AgentReviewOutput"]) -> list["IssueWithId"]:
+        """Build IssueWithId list from agent reviews. Reusable for aggregator and hallucination filter."""
+        issues: list[IssueWithId] = []
+        for agent_idx, agent_output in enumerate(reviews):
+            for file_idx, file_review in enumerate(agent_output.reviews):
+                for comment_idx, rc in enumerate(file_review.structured_comments):
+                    issues.append(
+                        cls(
+                            issue_id=f"{agent_idx}|{file_idx}|s|{comment_idx}",
+                            agent=agent_output.agent_name,
+                            file=file_review.file_path,
+                            line=rc.line_number,
+                            severity=rc.severity,
+                            category=rc.category,
+                            comment=rc.comment,
+                        )
+                    )
+                for line_num, comment_text in file_review.line_comments.items():
+                    issues.append(
+                        cls(
+                            issue_id=f"{agent_idx}|{file_idx}|l|{line_num}",
+                            agent=agent_output.agent_name or "unknown",
+                            file=file_review.file_path,
+                            line=line_num,
+                            severity="n/a",
+                            category="line_comment",
+                            comment=comment_text,
+                        )
+                    )
+        return issues
+
+    @staticmethod
+    def format_list_for_prompt(issues: list["IssueWithId"]) -> str:
+        """Format a list of issues as markdown for the LLM prompt."""
+        if not issues:
+            return "_No issues to review._"
+        return "\n\n".join(issue.to_markdown_block() for issue in issues)
 
 
 class AgentReviewOutput(BaseModel):

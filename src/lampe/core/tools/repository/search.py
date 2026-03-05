@@ -37,7 +37,8 @@ def search_in_files(
     """
     try:
         repo = Repo(path=repo_path)
-        commit_reference_path = f"{commit_reference}:{relative_dir_path if relative_dir_path else '.'}"
+        normalized = (relative_dir_path or "").strip().rstrip("/") or "."
+        commit_reference_path = commit_reference if normalized == "." else f"{commit_reference}:{normalized}"
         if include_line_numbers:
             grep_output = repo.git.grep("-n", pattern, commit_reference_path)
         else:

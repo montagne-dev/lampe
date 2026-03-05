@@ -105,8 +105,8 @@ def test_search_in_files_git_error_other_status_returns_error_message(mocker):
     assert "fatal" in result or "invalid" in result or "1" in str(result)
 
 
-def test_search_in_files_empty_relative_path_uses_dot(mocker):
-    """Test that empty relative_dir_path uses '.' for root of repo."""
+def test_search_in_files_empty_relative_path_uses_commit_only(mocker):
+    """Test that empty or '.' relative_dir_path uses commit ref only (root of repo)."""
     mock_repo = mocker.patch("lampe.core.tools.repository.search.Repo")
     mock_repo.return_value.git.grep.return_value = "match"
 
@@ -117,7 +117,7 @@ def test_search_in_files_empty_relative_path_uses_dot(mocker):
         repo_path="/tmp/repo",
     )
 
-    mock_repo.return_value.git.grep.assert_called_once_with("foo", "abc123:.")
+    mock_repo.return_value.git.grep.assert_called_once_with("foo", "abc123")
 
 
 def test_search_in_files_sanitizes_utf8_output(mocker):

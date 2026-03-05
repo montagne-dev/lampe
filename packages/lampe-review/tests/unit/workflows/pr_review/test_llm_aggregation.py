@@ -5,9 +5,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from llama_index.core.tools import ToolSelection
 
+from lampe.core.workflows.function_calling_agent import ToolSource
 from lampe.review.workflows.pr_review.data_models import (
     AgentReviewOutput,
     FileReview,
+    IssueWithId,
     ReviewComment,
 )
 from lampe.review.workflows.pr_review.llm_aggregation_step import (
@@ -16,6 +18,7 @@ from lampe.review.workflows.pr_review.llm_aggregation_step import (
     LLMAggregationWorkflow,
     _apply_muted_flags,
     _build_issues_with_ids,
+    _format_sources_for_display,
 )
 
 
@@ -57,13 +60,65 @@ def sample_agent_reviews():
 
 
 def test_build_issues_with_ids(sample_agent_reviews):
-    """Test that issue IDs are built correctly."""
+    """Test that issue IDs are built correctly via IssueWithId model."""
     issues_json = _build_issues_with_ids(sample_agent_reviews)
     assert "0|0|s|0" in issues_json
     assert "0|0|s|1" in issues_json
     assert "0|0|l|15" in issues_json
     assert "Missing input validation" in issues_json
     assert "Looks good" in issues_json
+
+
+def test_issue_with_id_build_and_format(sample_agent_reviews):
+    """Test IssueWithId model: build_from_agent_reviews and format_list_for_prompt."""
+    issues = IssueWithId.build_from_agent_reviews(sample_agent_reviews)
+    assert len(issues) == 3
+    assert issues[0].issue_id == "0|0|s|0"
+    assert issues[0].comment == "Missing input validation"
+    assert issues[2].issue_id == "0|0|l|15"
+
+    formatted = IssueWithId.format_list_for_prompt(issues)
+    assert "### Issue `0|0|s|0`" in formatted
+    assert "**Agent:** SecurityAgent" in formatted
+    assert "_No issues to review._" == IssueWithId.format_list_for_prompt([])
+
+
+def test_format_sources_for_display_includes_tool_name_and_kwargs_only():
+    """Tools used section shows tool_name + kwargs, not output."""
+    reviews = [
+        AgentReviewOutput(
+            agent_name="QuickReview",
+            focus_areas=["security"],
+            reviews=[],
+            sources=[
+                ToolSource(
+                    tool_name="get_file_content_at_commit",
+                    tool_kwargs={"path": "src/auth.py", "line_start": 1, "line_end": 50},
+                    tool_output="<omitted>",
+                ),
+                ToolSource(
+                    tool_name="search_in_files",
+                    tool_kwargs={"pattern": "authenticate", "relative_dir_path": "src"},
+                    tool_output="<omitted>",
+                ),
+            ],
+            summary="",
+        ),
+    ]
+    result = _format_sources_for_display(reviews)
+    assert "get_file_content_at_commit" in result
+    assert "search_in_files" in result
+    assert "src/auth.py" in result
+    assert "authenticate" in result
+    assert "<omitted>" not in result
+
+
+def test_format_sources_for_display_empty_when_no_sources():
+    """When all agents have empty sources, return empty string."""
+    reviews = [
+        AgentReviewOutput(agent_name="A", focus_areas=[], reviews=[], sources=[], summary=""),
+    ]
+    assert _format_sources_for_display(reviews) == ""
 
 
 def test_apply_muted_flags(sample_agent_reviews):
