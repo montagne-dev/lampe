@@ -84,6 +84,8 @@ class ValidationAgent(FunctionCallingAgent):
                 "repo_path": inp.repo_path,
                 "base_reference": inp.base_commit,
                 "head_reference": inp.head_commit,
+                "commit_hash": inp.head_commit,
+                "commit_reference": inp.head_commit,
                 "include_line_numbers": True,
             }
         )

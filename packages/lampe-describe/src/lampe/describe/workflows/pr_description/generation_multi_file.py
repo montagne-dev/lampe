@@ -43,7 +43,15 @@ class PRDescriptionFnAgentWorkflow(FunctionCallingAgent):
         )
         query = PR_DESCRIPTION_USER_PROMPT.format(pull_request=input.pull_request, files_changed=files_changed)
 
-        self.update_tools(partial_params={"repo_path": input.repository.local_path})
+        self.update_tools(
+            partial_params={
+                "repo_path": input.repository.local_path,
+                "base_reference": input.pull_request.base_commit_hash,
+                "head_reference": input.pull_request.head_commit_hash,
+                "commit_hash": input.pull_request.head_commit_hash,
+                "commit_reference": input.pull_request.head_commit_hash,
+            }
+        )
         response = await super().run(input=query, ctx=Context(self))
         return PRDescriptionOutput(description=response.result["response"].message.content)
 
